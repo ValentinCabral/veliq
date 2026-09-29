@@ -22,3 +22,5 @@ Problema detectado: `pro(nu(dar(...)))` invertía la prohibición. Corregido a `
 - SDK `submitBenchmark` permite que un runner OpenCode u otro harness suba resultados automáticamente después de evaluarlos. El runner específico de OpenCode y la validación externa siguen pendientes.
 - 15 pruebas automatizadas pasan. Benchmark interno: 0/1.000 candidatas aceptadas bajo contador de bytes, sin extrapolar a LLMs.
 - CI GitHub Actions: pruebas en Node 24 y benchmark sintético adjunto como artefacto por push/PR; estado remoto se verifica tras publicar. No constituye evaluación de un modelo externo.
+- README reescrito en español e inglés; `docs/HARNESSES.md` diferencia capacidades verificadas y pendientes de OpenCode, Codex, Claude Code y otros harnesses.
+- Agregador JSONL por caso con hash real de corpus, veredictos obligatorios y 17 pruebas locales.

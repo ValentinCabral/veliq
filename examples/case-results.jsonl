@@ -1,0 +1,2 @@
+{"case_id":"1","baseline":{"input":100,"output":20,"overhead":0,"retries":0,"correct":true,"critical_violation":false},"candidate":{"input":90,"output":20,"overhead":20,"retries":0,"correct":true,"critical_violation":false}}
+{"case_id":"2","baseline":{"input":120,"output":25,"overhead":0,"retries":0,"correct":true,"critical_violation":false},"candidate":{"input":130,"output":25,"overhead":20,"retries":0,"correct":false,"critical_violation":true}}

@@ -37,3 +37,7 @@ Para otra máquina, usar HTTPS detrás de un proxy autenticado; el gateway de VE
 ## OpenCode
 
 Un runner de evaluación sobre OpenCode puede usar su SDK o CLI oficial para producir dos recorridos controlados y llamar al cliente de VELIQ al terminarlos. El hook V1 actual sólo observa bytes de resultados de herramientas; **no genera benchmarks de comparación ni mide tokens del proveedor**. Hace falta verificar en una instalación concreta qué campos de uso expone cada versión de OpenCode antes de construir un runner automático específico. Referencia: https://opencode.ai/docs/sdk/ y https://opencode.ai/docs/cli/ .
+
+## Agregación reproducible por caso
+
+`scripts/aggregate-benchmark.mjs` recibe `resultados.jsonl`, el archivo real del corpus y un nombre nuevo de salida. Cada registro tiene `case_id`, `baseline` y `candidate`, con `input`, `output`, `overhead`, `retries`, `correct` y `critical_violation`. No acepta IDs duplicados ni veredictos ausentes. Calcula `dataset_digest` desde los bytes del corpus; nunca lo toma de un texto escrito a mano. El archivo de salida no sobrescribe uno existente. Las variables `VELIQ_RUN_ID`, `VELIQ_HARNESS`, `VELIQ_HARNESS_VERSION`, `VELIQ_MODEL`, `VELIQ_MODEL_VERSION`, `VELIQ_DATASET` y `VELIQ_COUNT_KIND` son obligatorias. Ver comandos completos en el README y guías en `docs/HARNESSES.md`.
