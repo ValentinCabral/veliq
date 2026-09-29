@@ -5,16 +5,16 @@ Servidor local stdio basado en `@modelcontextprotocol/sdk` 1.31.0, Zod y Node 24
 | Herramienta | Entrada | Resultado |
 |---|---|---|
 | `veliq.capabilities` | sin argumentos | capacidades y límites reales |
-| `veliq.encode` | `text`, `format=spanish|veliq` | texto VELIQ, VSR y diagnóstico |
-| `veliq.decode` | `text`, `format=veliq|vsr` | español sólo si existe plantilla original verificable; diagnóstico formal |
+| `veliq.encode` | `text`, `format=natural|spanish|veliq`, `language=es|en|pt|fr|de|it|nl|zh|ja|ko`, `surface=formal|compact` | texto VELIQ, VSR y original verificado |
+| `veliq.decode` | `text`, `format=veliq|compact|vsr` | texto natural sólo si existe original verificable; diagnóstico formal |
 | `veliq.validate` | `text`, `knownReferences?` | sintaxis, tipos y referencias explícitas |
-| `veliq.optimize` | `text`, `mode=observe|hybrid` | estrategia, salida, bytes y fallback; no modifica automáticamente el prompt de un harness |
+| `veliq.optimize` | `text`, `language`, `mode=observe|hybrid` | estrategia, salida, bytes y fallback; C1 no se habilita sin negociación; no modifica automáticamente el prompt |
 | `veliq.memory.store` | `id`, `scope`, `kind`, `body`, `provenance`, `expectedVersion?` | ID, versión y hash |
 | `veliq.memory.retrieve` | `scope`, `query?`, `limit?` | recuerdos del ámbito exacto y contenido original verificado por hash |
-| `veliq.benchmark` | `action=synthetic|list|ingest`, `run?` | benchmark sintético o corridas externas autodeclaradas |
+| `veliq.benchmark` | `action=synthetic|multilingual|list|ingest`, `run?` | bytes sintéticos, conteo offline `tiktoken` opcional o corridas externas autodeclaradas |
 
 `scope` exige las cinco claves `user`, `workspace`, `project`, `session` y `agent`. Los esquemas de entrada se validan mediante Zod. Los errores de ejecución se devuelven con `isError: true`; no se ejecutan comandos enviados por el modelo. La memoria queda en texto plano local: no guardar secretos. `benchmark.ingest` requiere una corrida explícita y la etiqueta como autodeclarada. Los contadores son bytes UTF-8 locales, no tokens de un proveedor.
 
-Se probó con cliente SDK dentro del proceso y con cliente oficial arrancando un subproceso stdio, incluyendo `initialize`, `tools/list`, `tools/call`, aislamiento de memoria y Observe. OpenCode 1.18.33 cargó el servidor desde `opencode.json` y reportó `connected`. Claude Code 2.1.284 registró el servidor pero quedó pendiente aprobación interactiva. Codex 0.159.0 fue detectado, sin modificar su configuración. Estas pruebas no demuestran reducción de tokens ni acceso a mensajes ocultos.
+La acción `multilingual` exige Python con `tiktoken==0.12.0` instalado aparte; ejecuta sólo conteos de texto locales y no llama a ningún LLM. Se probó con cliente SDK dentro del proceso y con cliente oficial arrancando un subproceso stdio, incluyendo `initialize`, `tools/list`, `tools/call`, aislamiento de memoria y Observe. OpenCode 1.18.33 cargó el servidor desde `opencode.json` y reportó `connected`. Claude Code 2.1.284 registró el servidor pero quedó pendiente aprobación interactiva. Codex 0.159.0 fue detectado, sin modificar su configuración. Estas pruebas no demuestran reducción de tokens ni acceso a mensajes ocultos.
 
 Especificación de transporte: https://modelcontextprotocol.io/specification/2025-11-25/basic/transports . Guías: `docs/HARNESSES.md`.

@@ -6,3 +6,12 @@ literal = JSON_string ; (* JSON double quoted string; se escapa con JSON *)
 ws = { " " | "\t" | "\r" | "\n" } ;
 lower = "a" | "b" | ... | "z" ;
 (* No hay precedencia implícita: anidamiento explícito. Prohibición pro(acción). *)
+
+(* Perfil textual compacto C1, experimental y reversible sólo en este subconjunto. *)
+compact = compact_term, { ";", compact_term } ;
+compact_term = action, "@", reference | scope, "{", compact, "}" ;
+action = "sen" | "nar" | "sel" | "mak" | "sav" | "zen" | "del" ;
+scope = "pro" | "obl" | "per" | "hyp" | "nu" ;
+reference = reference_char, { reference_char } ;
+reference_char = letter | digit | "_" | "." | ":" | "/" | "-" ;
+(* Sin espacios. Una secuencia ; tiene alcance dentro de {...} cuando está agrupada. *)

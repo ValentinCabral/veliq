@@ -20,9 +20,21 @@ jobs:
         run: npm run check
       - name: Benchmark sintético (bytes, no tokens LLM)
         run: node --experimental-strip-types apps/cli/main.ts benchmark > benchmark-synthetic.json
+      - name: Tokenizadores reales y corpus multilingüe
+        run: |
+          python3 -m venv .venv-research
+          .venv-research/bin/pip install -r research/benchmarks/requirements.txt
+          .venv-research/bin/python research/benchmarks/multilingual.py > benchmark-multilingual.json
+          cmp benchmark-multilingual.json research/benchmarks/results-2026-09-29.json
       - name: Adjuntar resultado reproducible
         uses: actions/upload-artifact@v7
         with:
           name: benchmark-synthetic
           path: benchmark-synthetic.json
+          retention-days: 14
+      - name: Adjuntar conteos multilingües
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-multilingual
+          path: benchmark-multilingual.json
           retention-days: 14

@@ -1,6 +1,6 @@
 {
   "name": "veliq",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,6 +9,7 @@
   "scripts": {
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "benchmark": "node --experimental-strip-types apps/cli/main.ts benchmark",
+    "benchmark:multilingual": "python3 research/benchmarks/multilingual.py",
     "demo": "node --experimental-strip-types examples/demo.ts",
     "dashboard": "node --experimental-strip-types apps/cli/main.ts dashboard",
     "tui": "node --experimental-strip-types apps/cli/main.ts tui",

@@ -13,6 +13,15 @@
 | MCP/Codex/Claude/A2A | MCP stdio con ocho herramientas y prueba de cliente real; Claude registra pendiente de aprobación | Sesiones de modelo Codex/Claude, A2A |
 | Benchmark | 1000 casos sintéticos, resultado negativo | Corpus diverso y métricas LLM |
 
+## Avance alpha.4 · medición multilingüe
+
+- Traductor determinista de una instrucción controlada en diez idiomas, con idioma fuente explícito y original conservado; las frases libres siguen rechazadas.
+- Perfil superficial C1 con parser/serializador estrictos, alcance explícito `pro{...}` y round-trip VSR probado. No se activa en Hybrid sin `compactNegotiated`; MCP permite probarlo explícitamente.
+- Benchmark reproducible con `tiktoken 0.12.0`, dos encodings y 100 identificadores × 10 idiomas. El archivo `research/benchmarks/results-2026-09-29.json` contiene los resultados y el hash del corpus; CI los compara. **Son conteos exactos de texto, no uso reportado por un modelo.**
+- Contraejemplos: C1 empeora inglés y chino en ambos encodings, incluso antes de contabilizar glosario. No existe evidencia de ahorro universal, comprensión por modelos ni reducción monetaria.
+- `veliq.benchmark` por MCP ejecutó la acción `multilingual` mediante cliente oficial en proceso: 1.000 casos, 20 filas y hash de corpus coincidente. Studio sirve el JSON versionado y muestra las 20 filas; pruebas de API incluyen el caso inglés. OpenCode no está instalado en el entorno de esta sesión para repetir la comprobación previa de conexión 1.18.33.
+- Pendiente: corpus realmente diverso, modelos de familias distintas, evaluación de comprensión/precisión, comparación con resúmenes convencionales, integración automática de uso reportado desde harnesses. Sin esos datos, la optimización no se activa operativamente.
+
 Problema detectado: `pro(nu(dar(...)))` invertía la prohibición. Corregido a `pro(del(ri(...)))` con prueba específica. Las dependencias externas no estaban disponibles y no se utilizó un SDK no verificable. El sistema no llama servicios externos.
 
 ## Avance alpha.2

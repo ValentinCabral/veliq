@@ -86,3 +86,9 @@ Use stdio and the same launch command. The official MCP SDK client tests initial
 Que una herramienta VELIQ funcione en un harness **no prueba ahorro**. Para comparar, corré baseline y candidata con el mismo corpus, modelo/versión/parámetros y veredicto por caso. Generá JSONL como `examples/case-results.jsonl`, ejecutá `scripts/aggregate-benchmark.mjs`, luego `bench import` o `scripts/upload-benchmark.mjs` con token opt-in. Detalles y comandos en [README](../README.md#probar-y-comparar) y [contrato](EXTERNAL_BENCHMARKS.md). No atribuir a VELIQ tokens de razonamiento interno no reportados.
 
 A working MCP connection does not establish token savings. Run paired evaluations, keep auxiliary work and retries, aggregate case-level results, and submit explicitly. Uploaded reports remain self-reported.
+
+### Benchmark local por MCP / Local benchmark through MCP
+
+Una vez conectado el servidor en OpenCode, Codex, Claude Code u otro cliente, invocá `veliq.benchmark` con `{"action":"multilingual"}`. Necesita Python y `tiktoken==0.12.0` instalados en el entorno del proceso servidor (`python3 -m pip install -r research/benchmarks/requirements.txt`, idealmente dentro de un venv). También se ejecuta sin harness con `npm run benchmark:multilingual`. Devuelve conteos locales de texto para 1.000 casos controlados y dos encodings; **no** ejecuta el modelo del harness ni registra su consumo real. Si no está `tiktoken`, el servidor devuelve un error explícito. Para medir una sesión real, el runner del harness debe recopilar los valores informados por su proveedor y enviar la corrida mediante el contrato anterior.
+
+With the MCP server connected, call `veliq.benchmark` with `{"action":"multilingual"}` after installing the optional Python dependency. This exercises the local text tokenizer, not your harness's model. For actual model comparisons, submit paired provider usage and task verdicts through the case-level contract above.

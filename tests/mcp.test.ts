@@ -12,6 +12,8 @@ test('MCP SDK: handshake, herramientas, VSR, Observe y memoria aislada',async()=
  try{await Promise.all([server.connect(a),client.connect(b)]);const listed=await client.listTools();assert.deepEqual(listed.tools.map(x=>x.name).sort(),['veliq.benchmark','veliq.capabilities','veliq.decode','veliq.encode','veliq.memory.retrieve','veliq.memory.store','veliq.optimize','veliq.validate']);
  const text='Analiza el error "1" y no elimines los archivos originales.';
  const encoded=parse(await client.callTool({name:'veliq.encode',arguments:{text}}));assert.match(encoded.text,/pro\(del/);
+ const c1=parse(await client.callTool({name:'veliq.encode',arguments:{text:'Analyze error "1" and do not delete the original files.',language:'en',surface:'compact'}}));assert.equal(c1.text,'sen@error:1;pro{del@archivos:originales}');
+ const decoded=parse(await client.callTool({name:'veliq.decode',arguments:{text:c1.text,format:'compact'}}));assert.match(decoded.veliq,/pro\(del/);
  const optimized=parse(await client.callTool({name:'veliq.optimize',arguments:{text,mode:'observe'}}));assert.equal(optimized.output,text);assert.equal(optimized.strategy,'natural');
  const invalid=await client.callTool({name:'veliq.encode',arguments:{text:'Borrá archivos'}});assert.equal(invalid.isError,true);
  const saved=parse(await client.callTool({name:'veliq.memory.store',arguments:{id:'m',scope,kind:'project',body:'contenido',provenance:'user'}}));assert.equal(saved.version,1);

@@ -4,20 +4,20 @@
 
 VELIQ investiga un idioma artificial composicional y un protocolo opcional para intercambiar significado entre agentes de IA. La versión actual es un **prototipo 0.1 alpha**, ejecutable sin cuentas ni claves. La interfaz del usuario sigue en lenguaje natural; VELIQ se usa sólo en los caminos internos que se habiliten explícitamente.
 
-> **Resultado actual:** el benchmark sintético de 1.000 casos selecciona 0 alternativas VELIQ bajo un contador de bytes UTF-8 con overhead. No existe aún evidencia de ahorro de tokens o costos de modelos comerciales. Las corridas externas importadas son autodeclaradas.
+> **Resultado actual:** medimos 1.000 textos paralelos controlados en diez idiomas con dos tokenizaciones reales. La sintaxis compacta C1 reduce tokens de texto en algunas combinaciones y empeora inglés y chino en ambas. No hay evidencia de ahorro monetario ni de comprensión por modelos. El benchmark anterior de bytes sigue disponible.
 
 ## Estado de implementación
 
 | Componente | Disponible hoy | Límite |
 |---|---|---|
-| Idioma | Diccionario 0.1 con IDs estables, parser ASCII, gramática EBNF, literales escapados, negación y prohibición con alcance explícito | La traducción desde español acepta sólo una plantilla; no entiende lenguaje libre |
-| VSR y codec | AST versionado, validación, round-trip formal, fallback, contador exacto de bytes y estimador separado | No hay tokenizador oficial de LLM ni garantías para traducción natural arbitraria |
+| Idioma | Diccionario 0.1 con IDs estables, parser formal y perfil compacto C1 con alcance explícito | Una sola plantilla controlada en diez idiomas; no entiende lenguaje libre |
+| VSR y codec | AST versionado, round-trip formal/C1, fallback, contador de bytes | Los encodings `tiktoken` se usan en benchmark offline; runtime MCP sólo cuenta bytes |
 | Memoria | SQLite local, ámbitos aislados, referencias por SHA-256, versiones y detección de conflictos | Datos locales en texto plano; sin embeddings |
 | Protocolo | Negociación y recuperación de referencias entre dos peers en proceso | MCP stdio local operativo; sin transporte remoto autenticado |
 | Runtime | Observe sin cambios de mensajes; Hybrid acotado con controles | No intercepta solicitudes de modelo automáticamente |
 | Interfaces | CLI, TUI y Studio local con datos persistidos | Studio es HTML ligero; configuración avanzada pendiente |
 | Harnesses | MCP con ocho herramientas; conexión OpenCode 1.18.33 verificada; SDK/endpoint para reportes | Sin interceptación automática universal ni prueba de sesiones de modelo en Codex/Claude |
-| Investigación | Suite automática, 1.000 casos sintéticos, agregación externa por caso, CI | Falta corpus diverso y evaluación funcional con modelos reales |
+| Investigación | Conteos de texto con `tiktoken` para 100 IDs × 10 idiomas y dos encodings, agregación externa, CI | Falta corpus diverso y evaluación funcional con modelos reales |
 
 [Estado detallado](PROGRESS.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md)
 
@@ -53,12 +53,14 @@ Para deshacer la configuración, `node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts uni
 node --experimental-strip-types apps/cli/main.ts doctor
 node --experimental-strip-types apps/cli/main.ts status
 node --experimental-strip-types apps/cli/main.ts encode 'Analiza el error "1" y no elimines los archivos originales.'
+node --experimental-strip-types apps/cli/main.ts encode --lang en --compact 'Analyze error "1" and do not delete the original files.'
+node --experimental-strip-types apps/cli/main.ts decode --compact 'sen@error:1;pro{del@archivos:originales}'
 node --experimental-strip-types apps/cli/main.ts decode 'pro(del(ri("archivos:originales")))'
 npm run tui
 npm run dashboard
 ```
 
-Abrí `http://127.0.0.1:4173` para Studio. `VELIQ_PORT` cambia el puerto y `VELIQ_HOME` la ruta de datos. La TUI necesita una terminal interactiva y muestra mediciones, memoria, idioma y corridas externas. `encode` con frases fuera de la plantilla conocida falla explícitamente; `decode` fuera de la traducción conocida muestra un diagnóstico formal, sin inventar español.
+Abrí `http://127.0.0.1:4173` para Studio. `VELIQ_PORT` cambia el puerto y `VELIQ_HOME` la ruta de datos. La TUI necesita una terminal interactiva y muestra mediciones, memoria, idioma y corridas externas. `encode` con frases fuera de la plantilla conocida falla explícitamente; `decode` fuera de la traducción conocida muestra un diagnóstico formal, sin inventar español. `--lang` admite `es`, `en`, `pt`, `fr`, `de`, `it`, `nl`, `zh`, `ja` y `ko`. El perfil C1 es experimental y requiere compatibilidad negociada con el receptor.
 
 ## Demostración de dos agentes
 
@@ -73,9 +75,12 @@ La demo toma una instrucción en español, construye VSR y VELIQ, mide bytes, ne
 ```bash
 npm test
 npm run benchmark
+python3 -m venv .venv-research
+.venv-research/bin/pip install -r research/benchmarks/requirements.txt
+.venv-research/bin/python research/benchmarks/multilingual.py > resultado-multilingue.json
 ```
 
-El benchmark incorporado es sintético y usa una sola plantilla. Para resultados externos, ejecutá el **mismo corpus** con baseline y candidata, modelo/configuración comparables y parámetros controlados. Registrá por cada caso tokens de entrada, salida, overhead (incluidas traducciones/instrucciones auxiliares), reintentos, veredicto funcional y violaciones críticas. Conservá el conteo como `provider-reported`, `exact-text`, `estimated` o `local-bytes` según su origen; no mezcles unidades.
+Ambos benchmarks son sintéticos y usan una sola plantilla. El resultado multilingüe cuenta texto exactamente con dos tokenizaciones pero **no** llamadas completas ni precisión de tarea. [Resultados y metodología](docs/BENCHMARKS.md) · [JSON reproducible](research/benchmarks/results-2026-09-29.json). Para resultados externos, ejecutá el **mismo corpus** con baseline y candidata, modelo/configuración comparables y parámetros controlados. Registrá por cada caso tokens de entrada, salida, overhead (incluidas traducciones/instrucciones auxiliares), reintentos, veredicto funcional y violaciones críticas. Conservá el conteo como `provider-reported`, `exact-text`, `estimated` o `local-bytes` según su origen; no mezcles unidades.
 
 El archivo [de ejemplo por caso](examples/case-results.jsonl) muestra el formato; sus números son ficticios. Después de crear `resultados.jsonl` y `corpus.jsonl`:
 
@@ -130,16 +135,16 @@ Ejecutá `npm test`, describí procedencia y límites de cualquier benchmark, y 
 
 VELIQ researches a compositional artificial language and an optional protocol for exchanging meaning between AI agents. The current **0.1 alpha** is a runnable, local prototype. Users continue to interact in natural language; internal VELIQ representations are used only where explicitly enabled.
 
-> **Measured so far:** the 1,000-case synthetic benchmark selects 0 VELIQ alternatives when UTF-8 byte overhead is included. This is **not** evidence about commercial LLM tokens, quality, or cost. Imported external runs are labeled self-reported.
+> **Measured so far:** a parallel synthetic benchmark counts exact plain-text tokens for 100 IDs in each of ten languages, under two real tokenizations. Compact C1 improves some combinations and regresses on English and Chinese under both. This is **not** evidence of lower model cost or comprehension. External runs remain self-reported.
 
 ## What works
 
-- Versioned ASCII dictionary and parser, formal grammar, typed VSR subset, explicit prohibition scope, round-trip validation, and fail-closed Spanish template.
+- Versioned ASCII dictionary and parsers for formal/C1 syntax, typed VSR subset, explicit prohibition scope, round-trip validation, and one controlled template in ten declared languages.
 - Local SQLite memory, content hashes, version conflicts, and two in-process peers with reference recovery.
 - Observe runtime, guarded Hybrid proposal, CLI, interactive TUI, and local Studio backed by SQLite.
 - External benchmark schema, per-case aggregator, authenticated opt-in HTTP ingestion, SDK client, and automated tests.
 
-**Not implemented:** free-form natural-language translation, provider-specific tokenizers, actual model cost measurement, remote authenticated agent transport, transparent deep interception, or A2A. Local MCP tools work and OpenCode connectivity was verified. See [progress](PROGRESS.md) and [roadmap](docs/ROADMAP.md).
+**Not implemented:** free-form natural-language translation, runtime provider token usage, actual model cost measurement, remote authenticated agent transport, transparent deep interception, or A2A. Offline research uses official `tiktoken` Python encodings for exact *text* counts. Local MCP tools work and OpenCode connectivity was verified. See [progress](PROGRESS.md) and [roadmap](docs/ROADMAP.md).
 
 ## Install and run
 
@@ -163,11 +168,26 @@ Open `http://127.0.0.1:4173` for Studio. Set `VELIQ_PORT` or `VELIQ_HOME` to cha
 ```bash
 node --experimental-strip-types apps/cli/main.ts doctor
 node --experimental-strip-types apps/cli/main.ts encode 'Analiza el error "1" y no elimines los archivos originales.'
+node --experimental-strip-types apps/cli/main.ts encode --lang en --compact 'Analyze error "1" and do not delete the original files.'
+node --experimental-strip-types apps/cli/main.ts decode --compact 'sen@error:1;pro{del@archivos:originales}'
 node --experimental-strip-types apps/cli/main.ts decode 'pro(del(ri("archivos:originales")))'
 node --experimental-strip-types apps/cli/main.ts bench list
 ```
 
 The demo creates VSR from a supported Spanish template, produces VELIQ, counts local bytes, exchanges a reference between two in-process peers, recovers it, preserves the no-delete prohibition, and records data displayed in Studio. It does **not** call an LLM or prove remote interoperability.
+
+`--lang` supports `es`, `en`, `pt`, `fr`, `de`, `it`, `nl`, `zh`, `ja`, and `ko` for this one controlled instruction. C1 is experimental; `pro{...}` explicitly scopes the prohibition. Its support must be negotiated before use between agents.
+
+### Multilingual token benchmark
+
+```bash
+python3 -m venv .venv-research
+.venv-research/bin/pip install -r research/benchmarks/requirements.txt
+.venv-research/bin/python research/benchmarks/multilingual.py > multilingual-result.json
+cmp multilingual-result.json research/benchmarks/results-2026-09-29.json
+```
+
+The committed [measurement and full methodology](docs/BENCHMARKS.md) compare original, formal VELIQ, C1, and VSR with `cl100k_base` and `o200k_base`, including glossary amortization scenarios. These are exact plain-text encoding counts only. Results contradict any claim of universal savings over all languages; English and Chinese are observed regressions. Model understanding, full request overhead, accuracy, cost, and different model families remain unmeasured.
 
 ## Connect to AI harnesses
 
