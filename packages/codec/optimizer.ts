@@ -10,7 +10,7 @@ export class EstimateTokenizer implements TokenCounter{count(text:string):Count{
 export type Decision={strategy:'natural'|'veliq-text'|'veliq-compact';output:string;original:Count;optimized:Count;overhead:Count;fallback?:string};
 export function optimize(original:string,vsr:VSR|undefined,counter:TokenCounter,mode:'observe'|'hybrid'|'native'|'research'='observe',overhead='',options:{compactNegotiated?:boolean}={}):Decision{
   const base=counter.count(original),extra=counter.count(overhead);
-  const fallback=(reason:string):Decision=>({strategy:'natural',output:original,original:base,optimized:base,overhead:extra,fallback:reason});
+  const fallback=(reason:string):Decision=>({strategy:'natural',output:original,original:base,optimized:base,overhead:counter.count(''),fallback:reason});
   if(mode==='observe')return fallback('observe');
   if(!vsr)return fallback('Sin VSR verificable');
   try{const candidate=print(vsr.root);const roundtrip=fromText(candidate);

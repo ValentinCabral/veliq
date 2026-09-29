@@ -66,6 +66,8 @@ def main():
         compact = sum(row['compact'] for row in group)
         glossary = group[0]['glossaryTokens']
         c1_glossary = group[0]['c1GlossaryTokens']
+        choices={'natural':baseline,'veliq-formal':alternate+glossary,'veliq-c1':compact+c1_glossary}
+        chosen=min(choices,key=choices.get)
         summary.append({
             'encoding': encoding, 'language': language, 'cases': len(group),
             'originalTextTokens': baseline, 'veliqTextTokens': alternate,
@@ -76,6 +78,9 @@ def main():
             'compactGlossaryPerMessagePercent': round(100 * (baseline-compact-len(group)*c1_glossary)/baseline, 2),
             'compactBreakEvenMessagesSameLength': None if baseline <= compact else
                 (c1_glossary * len(group) // (baseline-compact)) + 1,
+            'sessionHybridStrategy':chosen,
+            'sessionHybridTextTokens':choices[chosen],
+            'sessionHybridReductionPercent':round(100*(baseline-choices[chosen])/baseline,2),
             'grossTextReductionPercent': round(100 * (baseline-alternate)/baseline, 2),
             'withOneGlossaryPercent': round(100 * (baseline-alternate-glossary)/baseline, 2),
             'withGlossaryPerMessagePercent': round(100 * (baseline-alternate-len(group)*glossary)/baseline, 2),

@@ -26,6 +26,8 @@ jobs:
           .venv-research/bin/pip install -r research/benchmarks/requirements.txt
           .venv-research/bin/python research/benchmarks/multilingual.py > benchmark-multilingual.json
           cmp benchmark-multilingual.json research/benchmarks/results-2026-09-29.json
+          .venv-research/bin/python research/benchmarks/selective.py > benchmark-selective.json
+          cmp benchmark-selective.json research/benchmarks/selective-results-2026-09-29.json
       - name: Adjuntar resultado reproducible
         uses: actions/upload-artifact@v7
         with:
@@ -37,4 +39,10 @@ jobs:
         with:
           name: benchmark-multilingual
           path: benchmark-multilingual.json
+          retention-days: 14
+      - name: Adjuntar recuperación selectiva
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-selective
+          path: benchmark-selective.json
           retention-days: 14

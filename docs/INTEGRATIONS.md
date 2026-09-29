@@ -1,6 +1,6 @@
 # Integraciones 0.1 alpha.3
 
-El servidor MCP stdio (`adapters/mcp/server.ts`) utiliza el SDK oficial `@modelcontextprotocol/sdk` 1.31.0 y Zod para validar ocho herramientas: `veliq.capabilities`, `veliq.encode`, `veliq.decode`, `veliq.validate`, `veliq.optimize`, `veliq.memory.store`, `veliq.memory.retrieve`, `veliq.benchmark`. `npm run mcp` lo ejecuta localmente. Se probó con un cliente MCP en memoria y un subproceso stdio real, incluyendo memoria aislada.
+El servidor MCP stdio (`adapters/mcp/server.ts`) utiliza el SDK oficial `@modelcontextprotocol/sdk` 1.31.0 y Zod para validar once herramientas: `veliq.capabilities`, `veliq.encode`, `veliq.decode`, `veliq.validate`, `veliq.optimize`, `veliq.memory.store`, `veliq.memory.retrieve`, `veliq.memory.exact.store`, `veliq.memory.exact.select`, `veliq.pick`, `veliq.benchmark`. `npm run mcp` lo ejecuta localmente. Se probó con un cliente MCP en memoria y un subproceso stdio real, incluyendo memoria aislada.
 
 OpenCode 1.18.33: `install opencode` agrega el servidor al `opencode.json` del proyecto, crea respaldo privado, conserva otras entradas y `uninstall opencode` elimina sólo VELIQ. Se verificó `opencode mcp list` con estado conectado. El hook V1 `observe.mjs` sigue siendo experimental y no se instala con MCP; no hay interceptación profunda automática.
 

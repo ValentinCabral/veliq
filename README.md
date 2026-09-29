@@ -6,6 +6,8 @@ VELIQ investiga un idioma artificial composicional y un protocolo opcional para 
 
 > **Resultado actual:** medimos 1.000 textos paralelos controlados en diez idiomas con dos tokenizaciones reales. La sintaxis compacta C1 reduce tokens de texto en algunas combinaciones y empeora inglés y chino en ambas. No hay evidencia de ahorro monetario ni de comprensión por modelos. El benchmark anterior de bytes sigue disponible.
 
+**Ahorro comprobado en una tarea acotada:** recuperación exacta por ID sobre documentos compartidos. En 100 consultas a un documento de 100 registros, `veliq.pick` reduce **96,03 %** de los tokens de texto de entrada bajo `cl100k_base` en el caso español, incluyendo carga inicial y llamadas representadas como texto. Una búsqueda convencional equivalente es **0,42 % más barata**. El beneficio proviene de no reenviar el documento completo; no prueba que el idioma VELIQ reduzca el costo de un LLM. [Método y límites](docs/BENCHMARKS.md).
+
 ## Estado de implementación
 
 | Componente | Disponible hoy | Límite |
@@ -16,8 +18,8 @@ VELIQ investiga un idioma artificial composicional y un protocolo opcional para 
 | Protocolo | Negociación y recuperación de referencias entre dos peers en proceso | MCP stdio local operativo; sin transporte remoto autenticado |
 | Runtime | Observe sin cambios de mensajes; Hybrid acotado con controles | No intercepta solicitudes de modelo automáticamente |
 | Interfaces | CLI, TUI y Studio local con datos persistidos | Studio es HTML ligero; configuración avanzada pendiente |
-| Harnesses | MCP con ocho herramientas; conexión OpenCode 1.18.33 verificada; SDK/endpoint para reportes | Sin interceptación automática universal ni prueba de sesiones de modelo en Codex/Claude |
-| Investigación | Conteos de texto con `tiktoken` para 100 IDs × 10 idiomas y dos encodings, agregación externa, CI | Falta corpus diverso y evaluación funcional con modelos reales |
+| Harnesses | MCP con once herramientas; conexión OpenCode 1.18.33 verificada; SDK/endpoint para reportes | Sin interceptación automática universal ni prueba de sesiones de modelo en Codex/Claude |
+| Investigación | Conteos `tiktoken` multilingües y de recuperación selectiva, comparación con búsqueda convencional, agregación externa y CI | Falta corpus diverso y evaluación funcional con modelos reales |
 
 [Estado detallado](PROGRESS.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md)
 
@@ -38,7 +40,7 @@ Para usar el comando corto `veliq` se puede instalar el enlace local con `npm li
 
 ## Conectar a OpenCode, Codex o Claude Code
 
-VELIQ ya expone ocho herramientas MCP reales por stdio (`encode`, `decode`, `validate`, `optimize`, memoria, benchmark y capacidades). Verifiqué la conexión con OpenCode 1.18.33 y el cliente oficial MCP. Desde tu proyecto OpenCode:
+VELIQ ya expone once herramientas MCP reales por stdio (`encode`, `decode`, `validate`, `optimize`, memoria, benchmark y capacidades). Verifiqué la conexión con OpenCode 1.18.33 y el cliente oficial MCP. Desde tu proyecto OpenCode:
 
 ```bash
 node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts install opencode
@@ -78,9 +80,12 @@ npm run benchmark
 python3 -m venv .venv-research
 .venv-research/bin/pip install -r research/benchmarks/requirements.txt
 .venv-research/bin/python research/benchmarks/multilingual.py > resultado-multilingue.json
+.venv-research/bin/python research/benchmarks/selective.py > resultado-selectivo.json
 ```
 
-Ambos benchmarks son sintéticos y usan una sola plantilla. El resultado multilingüe cuenta texto exactamente con dos tokenizaciones pero **no** llamadas completas ni precisión de tarea. [Resultados y metodología](docs/BENCHMARKS.md) · [JSON reproducible](research/benchmarks/results-2026-09-29.json). Para resultados externos, ejecutá el **mismo corpus** con baseline y candidata, modelo/configuración comparables y parámetros controlados. Registrá por cada caso tokens de entrada, salida, overhead (incluidas traducciones/instrucciones auxiliares), reintentos, veredicto funcional y violaciones críticas. Conservá el conteo como `provider-reported`, `exact-text`, `estimated` o `local-bytes` según su origen; no mezcles unidades.
+Los benchmarks son sintéticos; el lingüístico repite una plantilla y el selectivo repite consultas a un documento estructurado. Los resultados cuentan texto exactamente con dos tokenizaciones pero **no** solicitudes completas ni precisión de tarea. [Resultados y metodología](docs/BENCHMARKS.md) · [JSON reproducible](research/benchmarks/results-2026-09-29.json). Para resultados externos, ejecutá el **mismo corpus** con baseline y candidata, modelo/configuración comparables y parámetros controlados. Registrá por cada caso tokens de entrada, salida, overhead (incluidas traducciones/instrucciones auxiliares), reintentos, veredicto funcional y violaciones críticas. Conservá el conteo como `provider-reported`, `exact-text`, `estimated` o `local-bytes` según su origen; no mezcles unidades.
+
+La [medición selectiva](research/benchmarks/selective-results-2026-09-29.json) usa diez documentos sintéticos, 100 registros y 100 consultas exactas por idioma; valida IDs, cuerpo, restricciones y hash. Conectá un harness MCP a `veliq.memory.exact.store` para guardar el documento con ámbito y a `veliq.pick` para recuperar sólo el registro. Si el receptor necesita todo el documento o no existe el ID, recuperá la fuente completa o dejá fallar la consulta; no inventes contenido. La memoria local sigue sin cifrado, por lo que no debe guardar secretos.
 
 El archivo [de ejemplo por caso](examples/case-results.jsonl) muestra el formato; sus números son ficticios. Después de crear `resultados.jsonl` y `corpus.jsonl`:
 
@@ -137,6 +142,8 @@ VELIQ researches a compositional artificial language and an optional protocol fo
 
 > **Measured so far:** a parallel synthetic benchmark counts exact plain-text tokens for 100 IDs in each of ten languages, under two real tokenizations. Compact C1 improves some combinations and regresses on English and Chinese under both. This is **not** evidence of lower model cost or comprehension. External runs remain self-reported.
 
+**Measured savings for a bounded task:** exact-ID retrieval from a shared 100-record document over 100 queries uses **96.03% fewer plain-text input tokens** under `cl100k_base` for Spanish, including a one-time storage call and each textual tool call. Equivalent conventional retrieval is **0.42% cheaper**. The benefit comes from selecting relevant context, not from proving that the VELIQ language itself saves model tokens. [Method and limitations](docs/BENCHMARKS.md).
+
 ## What works
 
 - Versioned ASCII dictionary and parsers for formal/C1 syntax, typed VSR subset, explicit prohibition scope, round-trip validation, and one controlled template in ten declared languages.
@@ -185,13 +192,15 @@ python3 -m venv .venv-research
 .venv-research/bin/pip install -r research/benchmarks/requirements.txt
 .venv-research/bin/python research/benchmarks/multilingual.py > multilingual-result.json
 cmp multilingual-result.json research/benchmarks/results-2026-09-29.json
+.venv-research/bin/python research/benchmarks/selective.py > selective-result.json
+cmp selective-result.json research/benchmarks/selective-results-2026-09-29.json
 ```
 
 The committed [measurement and full methodology](docs/BENCHMARKS.md) compare original, formal VELIQ, C1, and VSR with `cl100k_base` and `o200k_base`, including glossary amortization scenarios. These are exact plain-text encoding counts only. Results contradict any claim of universal savings over all languages; English and Chinese are observed regressions. Model understanding, full request overhead, accuracy, cost, and different model families remain unmeasured.
 
 ## Connect to AI harnesses
 
-VELIQ now serves eight real tools through the official MCP SDK over stdio. OpenCode 1.18.33 reported the project installation as connected. From your OpenCode project:
+VELIQ now serves eleven real tools through the official MCP SDK over stdio. OpenCode 1.18.33 reported the project installation as connected. From your OpenCode project:
 
 ```bash
 node /ABSOLUTE/PATH/veliq/apps/cli/main.ts install opencode
