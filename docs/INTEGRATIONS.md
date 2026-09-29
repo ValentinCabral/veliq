@@ -1,7 +1,9 @@
-# Integraciones
+# Integraciones 0.1 alpha.3
 
-OpenCode V1 publica plugins `.opencode/plugins` y `tool.execute.after`; V2 usa `ctx.tool.hook("execute.after")`, con migración específica. `adapters/opencode/observe.mjs` implementa el hook V1 y sólo cuenta bytes del resultado, sin modificar `output`; prueba aislada con evento equivalente. No se dispone de OpenCode instalado para verificar carga y ciclo de vida real, por lo que no se instala ni anuncia soporte V2. Copia/instalación automáticas quedan deshabilitadas hasta verificar versión y permisos. Referencias oficiales: https://opencode.ai/docs/plugins/ y https://opencode.ai/v2/docs/build/plugins/migrate-v1 .
+El servidor MCP stdio (`adapters/mcp/server.ts`) utiliza el SDK oficial `@modelcontextprotocol/sdk` 1.31.0 y Zod para validar ocho herramientas: `veliq.capabilities`, `veliq.encode`, `veliq.decode`, `veliq.validate`, `veliq.optimize`, `veliq.memory.store`, `veliq.memory.retrieve`, `veliq.benchmark`. `npm run mcp` lo ejecuta localmente. Se probó con un cliente MCP en memoria y un subproceso stdio real, incluyendo memoria aislada.
 
-Codex, Claude Code, MCP y A2A: únicamente directorios de extensión e interfaz SDK, sin adaptadores operativos. MCP oficial permite herramientas stdio, pero no se añadió una implementación sin el SDK verificable. Ninguna integración intercepta razonamiento privado.
+OpenCode 1.18.33: `install opencode` agrega el servidor al `opencode.json` del proyecto, crea respaldo privado, conserva otras entradas y `uninstall opencode` elimina sólo VELIQ. Se verificó `opencode mcp list` con estado conectado. El hook V1 `observe.mjs` sigue siendo experimental y no se instala con MCP; no hay interceptación profunda automática.
 
-La ingesta de benchmarks para cualquier harness se realiza mediante un SDK HTTP opt-in y un formato versionado; ver `docs/EXTERNAL_BENCHMARKS.md`. No confundir una corrida importada con una medición verificada. La TUI se implementa sobre Node readline, sin framework de terceros.
+Claude Code 2.1.284: registro MCP de proyecto probado; salud quedó `Pending approval` y no se verificó una sesión de modelo. Codex 0.159.0: CLI disponible, pero no se modificó su configuración local; la interoperabilidad del servidor se probó con el cliente oficial MCP. Las recetas se encuentran en `docs/HARNESSES.md`. A2A no implementado. Ninguna integración accede a razonamiento privado.
+
+Documentación consultada: https://modelcontextprotocol.io/specification/2025-11-25/basic/transports , https://opencode.ai/docs/mcp-servers/ , https://developers.openai.com/codex/mcp , https://code.claude.com/docs/en/mcp .

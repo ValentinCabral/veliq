@@ -20,10 +20,11 @@ async function main(){
     case 'status':{const s=store();output({mode:'observe',metrics:s.metrics().slice(0,10),memory:s.retrieve(defaultScope)});s.close();break}
     case 'benchmark':{const {runBenchmark}=await import('../../research/benchmarks/run.ts');output(runBenchmark());break}
     case 'bench':{const sub=args.shift();const s=store();try{if(sub==='import'){const file=args.shift();if(!file)throw new Error('Uso: veliq bench import archivo.json');output(ingestRun(s,JSON.parse(readFileSync(resolve(file),'utf8'))))}else if(sub==='list')output(listRuns(s));else throw new Error('Uso: veliq bench import archivo.json | bench list')}finally{s.close()}break}
+    case 'mcp':{const {serveVeliqMcp}=await import('../../adapters/mcp/server.ts');await serveVeliqMcp();break}
     case 'tui':{const s=store();try{const {runTui}=await import('./tui.ts');await runTui(s)}finally{s.close()}break}
     case 'dashboard':{const s=store();const server=startServer(s,Number(process.env.VELIQ_PORT??4173));await new Promise<void>(resolve=>server.on('listening',resolve));console.log(`VELIQ Studio local: http://127.0.0.1:${(server.address() as {port:number}).port}`);break}
-    case 'install':case 'uninstall':{if(args[0]!=='opencode')throw new Error('Uso: veliq install|uninstall opencode');throw new Error('Instalación automática no habilitada sin OpenCode local verificable; ver docs/INTEGRATIONS.md')}
-    default:output('veliq init | doctor | status | encode TEXTO | decode VELIQ | benchmark | bench import|list | tui | dashboard | install opencode | uninstall opencode');
+    case 'install':case 'uninstall':{if(args[0]!=='opencode')throw new Error('Uso: veliq install|uninstall opencode');const {connectOpenCode,disconnectOpenCode}=await import('../../adapters/opencode/config.ts');output(cmd==='install'?connectOpenCode():disconnectOpenCode());break}
+    default:output('veliq init | doctor | status | encode TEXTO | decode VELIQ | benchmark | bench import|list | mcp | tui | dashboard | install opencode | uninstall opencode');
   }
 }
 main().catch(e=>{console.error(`Error: ${e instanceof Error?e.message:String(e)}`);process.exitCode=1});

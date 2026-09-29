@@ -1,6 +1,6 @@
 {
   "name": "veliq",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,10 +12,20 @@
     "demo": "node --experimental-strip-types examples/demo.ts",
     "dashboard": "node --experimental-strip-types apps/cli/main.ts dashboard",
     "tui": "node --experimental-strip-types apps/cli/main.ts tui",
-    "check": "npm test"
+    "mcp": "node --experimental-strip-types apps/cli/main.ts mcp",
+    "check": "npm run typecheck && npm test",
+    "typecheck": "tsc --noEmit"
   },
   "bin": {
     "veliq": "./apps/cli/veliq.mjs"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "typescript": "^6.0.3"
+  }
 }

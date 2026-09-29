@@ -11,6 +11,6 @@ export const roots = [
   [1038,'sta','State'],[1039,'prop','Property'],[1040,'rel','Relation'],[1041,'col','Collection'],
   [1042,'opq','OpaqueData'],[1043,'del','Delete']
 ] as const;
-export const byWord = new Map(roots.map(([id,word,type]) => [word,{id,type}]));
-export const byId = new Map(roots.map(([id,word,type]) => [id,{word,type}]));
+export const byWord:Map<string,{id:number;type:string}> = new Map(roots.map(([id,word,type]) => [word,{id,type}]));
+export const byId:Map<number,{word:string;type:string}> = new Map(roots.map(([id,word,type]) => [id,{word,type}]));
 export const dictionaryVersion = '0.1';

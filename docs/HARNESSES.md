@@ -1,50 +1,88 @@
-# Guías por harness / Harness recipes
+# Conectar VELIQ a un harness / Connect VELIQ to a harness
 
-## Regla común / Common rule
+## Preparación / Setup
 
-VELIQ no intercepta razonamiento privado ni asume que cualquier harness comparta una memoria. Para medir ahorro real, ejecutá el mismo corpus en dos brazos: **baseline original** y **candidata VELIQ**, con modelo/versión/parámetros/herramientas comparables. Guardá un resultado por caso, incluyendo llamadas auxiliares, reintentos, salida, corrección y violaciones críticas. El archivo `examples/case-results.jsonl` ilustra el esquema; sus cifras son ficticias. Usá el agregador y el cliente de envío descritos en el [README](../README.md#probar-y-comparar).
+Cloná el repositorio, instalá dependencias y comprobá el servidor:
 
-VELIQ does not intercept private reasoning or assume shared memory across harnesses. Run the same dataset in baseline and candidate arms under comparable settings. Include auxiliary calls, retries, output, task correctness, and critical violations. See the [English README](../README.md#run-a-comparable-external-evaluation).
+```bash
+git clone https://github.com/ValentinCabral/veliq.git
+cd veliq
+npm ci
+npm run check
+npm run mcp
+```
 
-## OpenCode
+`npm run mcp` queda esperando mensajes MCP por stdio; Ctrl+C lo detiene. No imprime logs en stdout. Definí la ruta absoluta del archivo `apps/cli/main.ts` (por ejemplo, `VELIQ_MAIN="$(pwd)/apps/cli/main.ts"` en Bash). Las recetas siguientes usan `/RUTA/ABSOLUTA/veliq/apps/cli/main.ts` como marcador: reemplazalo por la ruta real. Node.js 24+ debe estar en PATH del harness.
 
-**Hoy / Today:** el adaptador `adapters/opencode/observe.mjs` implementa el hook V1 `tool.execute.after` y guarda solamente tamaños en bytes de resultados de herramientas en `.veliq/opencode-observe.sqlite`. Fue probado con eventos equivalentes, **no con un binario OpenCode instalado**. No informa tokens del proveedor ni cambia mensajes. OpenCode V2 usa otra API; no instalar este archivo en V2.
+Clone, run `npm ci` and `npm run check`. The MCP server uses stdio and has no model API credentials. Replace `/ABSOLUTE/PATH/veliq/apps/cli/main.ts` with your actual path in the recipes below.
 
-1. Verificá `opencode --version` y la [documentación oficial de plugins V1](https://opencode.ai/docs/plugins/) o [V2](https://opencode.ai/v2/docs/build/plugins/migrate-v1). La prueba de carga del adaptador en la versión instalada sigue pendiente.
-2. Para un ensayo funcional, usá un runner propio sobre el [SDK oficial](https://opencode.ai/docs/sdk/) o la [CLI](https://opencode.ai/docs/cli/) y ejecutá cada caso en ambos brazos. Capturá uso reportado por el proveedor si la versión realmente lo expone; si no, etiquetá el conteo como estimado.
-3. Emití `resultados.jsonl` con un registro por caso. Ejecutá `aggregate-benchmark.mjs` con `VELIQ_HARNESS=opencode`, importá el resultado o enviá con `upload-benchmark.mjs`.
-4. No inferir ahorro a partir de la base `tool_observations`: almacena bytes de herramientas, no costo total.
+## OpenCode: instalado y verificado / installed and verified
 
-**English:** use OpenCode's official SDK or CLI to execute paired cases and produce per-case JSONL; aggregate and submit using the commands in README. The included V1 hook is an isolated Observe experiment, not a verified current-version integration or a token counter.
+Desde el **proyecto donde usás OpenCode**, ejecutá:
+
+```bash
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts install opencode
+opencode mcp list
+```
+
+El comando agrega `mcp.veliq` a `opencode.json`, conserva las demás entradas y guarda una copia privada en `.veliq/backups/`. Si hay `opencode.jsonc`, falla sin alterar comentarios: añadí el bloque manualmente. Para revertir:
+
+```bash
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts uninstall opencode
+```
+
+El instalador y `opencode mcp list` se probaron con OpenCode **1.18.33**: mostró `veliq connected`. Una configuración manual equivalente es:
+
+```json
+{
+  "mcp": {
+    "veliq": {
+      "type": "local",
+      "command": ["node", "--experimental-strip-types", "/RUTA/ABSOLUTA/veliq/apps/cli/main.ts", "mcp"],
+      "enabled": true
+    }
+  }
+}
+```
+
+En OpenCode pedí: **«Usá la herramienta `veliq.capabilities` y luego `veliq.encode` con `Analiza el error \"1\" y no elimines los archivos originales.`»**. La conexión expone ocho herramientas: `veliq.capabilities`, `veliq.encode`, `veliq.decode`, `veliq.validate`, `veliq.optimize`, `veliq.memory.store`, `veliq.memory.retrieve` y `veliq.benchmark`. El modelo decide cuándo llamarlas; VELIQ **no intercepta ni reescribe automáticamente** todas las solicitudes. La observación V1 de `adapters/opencode/observe.mjs` sigue separada y no se instala mediante este comando. [Configuración oficial](https://opencode.ai/docs/mcp-servers/).
+
+**English:** run the installer from your OpenCode project, then `opencode mcp list`. It was verified as connected on OpenCode 1.18.33. Ask the model to call `veliq.capabilities`. Use `uninstall opencode` to remove only VELIQ and keep a private backup. Tool calls are explicit; this is not a transparent prompt interceptor.
 
 ## Codex
 
-**Hoy / Today:** no hay hook verificado que intercepte todas las solicitudes a modelos Codex; tampoco hay servidor MCP VELIQ operativo en esta alpha. La [documentación oficial de Codex MCP](https://developers.openai.com/codex/mcp) describe cómo conectar herramientas, pero configurar MCP no equivale a interceptar mensajes ocultos.
+La CLI de Codex permite registrar un servidor MCP stdio. En una instalación Codex propia:
 
-1. Construí un runner autorizado con la interfaz pública que realmente exponga la versión de Codex instalada. Registrá sólo métricas que esa interfaz entregue.
-2. Corré baseline/candidata sobre el mismo corpus. Incluí los reintentos y la preparación de contexto dentro de cada total.
-3. Emití JSONL por caso, agregá con `VELIQ_HARNESS=codex` y usá importación local o el endpoint opt-in.
+```bash
+codex mcp add veliq -- node --experimental-strip-types /RUTA/ABSOLUTA/veliq/apps/cli/main.ts mcp
+codex mcp list
+```
 
-**English:** use a documented public Codex interface for paired trials. Do not claim access to hidden prompts or reasoning. Aggregate per-case results with `VELIQ_HARNESS=codex`; imported results remain self-reported.
+Luego, en Codex, pedí que invoque `veliq.capabilities` o `veliq.encode`. La [documentación oficial](https://developers.openai.com/codex/mcp) describe también configuración por `config.toml` e IDE. Este comando **no se ejecutó contra una instalación Codex configurada** en este entorno; el servidor sí pasó un handshake y llamadas de herramientas por stdio con el cliente oficial MCP. No concede acceso a razonamiento privado ni intercepta prompts ocultos. Para borrar la conexión: `codex mcp remove veliq` según la ayuda de tu versión (`codex mcp --help`).
+
+**English:** register the stdio server with `codex mcp add` and check `codex mcp list`. Tool interoperability was tested with the official MCP client, while Codex's own configured session was not tested here.
 
 ## Claude Code
 
-**Hoy / Today:** los [hooks oficiales](https://code.claude.com/docs/en/hooks) exponen eventos como `PostToolUse` y `SessionEnd`, pero VELIQ todavía no instala uno ni extrae automáticamente consumo completo del proveedor. Un hook de herramienta no mide por sí mismo el costo de la sesión.
+En el proyecto donde trabajás:
 
-1. Ejecutá casos baseline/candidata con las herramientas públicas de Claude Code que tengas disponibles y medí consumo reportado si está expuesto.
-2. Escribí el JSONL por caso; agregá con `VELIQ_HARNESS=claude-code`.
-3. Importá o enviá la corrida únicamente después de revisar los resultados y habilitar explícitamente el destino.
+```bash
+claude mcp add --scope project --transport stdio veliq -- node --experimental-strip-types /RUTA/ABSOLUTA/veliq/apps/cli/main.ts mcp
+claude mcp list
+```
 
-**English:** Claude Code hooks expose selected lifecycle/tool events, not a universal verified VELIQ interception layer. Use a controlled external runner, create case JSONL, aggregate, and explicitly submit.
+Claude Code puede pedir aprobación de un servidor en `.mcp.json`; aceptala sólo tras revisar el comando. En Claude Code, `/mcp` muestra el estado; después pedí una llamada a `veliq.capabilities`. Probé el registro en **Claude Code 2.1.284**: la lista mostró `Pending approval`; no se completó una conversación autenticada en Claude. Remové con `claude mcp remove veliq`. [Documentación oficial](https://code.claude.com/docs/en/mcp).
 
-## LangGraph u otro harness / Custom harness
+**English:** add the project-scoped stdio server, review the approval prompt, check `/mcp`, then call a VELIQ tool. Registration was tested on Claude Code 2.1.284; interactive approval/model invocation was not completed in this environment.
 
-Integrá `packages/adapter-sdk/benchmark-client.ts` y su función `submitBenchmark(run, endpoint, token)` en el cierre de tu suite. El cliente valida el esquema, exige HTTPS o loopback y rechaza redirecciones. No accede a prompts. Alternativamente, generá `corrida.json` y ejecutá `scripts/upload-benchmark.mjs` al terminar el job. Para un CI sin acceso a tu Studio local, adjuntá el JSON como artefacto y luego importalo manualmente; VELIQ no crea un servidor público por defecto.
+## Otro cliente MCP / Another MCP client
 
-Integrate `submitBenchmark` after your controlled test suite finishes. If CI cannot reach your local Studio, store the run JSON as a build artifact and import it locally later. Do not expose the local gateway publicly without a secured HTTPS deployment.
+Usá el transporte **stdio** con el comando `node --experimental-strip-types /RUTA/ABSOLUTA/veliq/apps/cli/main.ts mcp`. El SDK oficial de MCP probó `initialize`, `tools/list`, `tools/call`, la persistencia con ámbito explícito y un proceso hijo real. Herramientas de memoria requieren `{user,workspace,project,session,agent}`; no mezcles ámbitos. `veliq.optimize` en Observe devuelve el texto original y cuenta bytes UTF-8; no afirma ahorro de tokens del proveedor.
 
-## Interpretación / Interpretation
+Use stdio and the same launch command. The official MCP SDK client tests initialization, tool listing/calls, a real child process, and exact-scope memory isolation.
 
-Un porcentaje negativo o una violación crítica es un resultado válido. `provider-reported` es distinto de `exact-text`, `estimated` y `local-bytes`. La importación valida forma e integridad local del registro, **no certifica** que el experimento se haya realizado. Conservá corpus, versiones y criterios de corrección para reproducirlo.
+## Benchmarks entre harnesses / Harness benchmarks
 
-A negative result or critical violation is useful evidence. Keep counts separated by measurement class and preserve the dataset, versions, and correctness criteria for reproducibility.
+Que una herramienta VELIQ funcione en un harness **no prueba ahorro**. Para comparar, corré baseline y candidata con el mismo corpus, modelo/versión/parámetros y veredicto por caso. Generá JSONL como `examples/case-results.jsonl`, ejecutá `scripts/aggregate-benchmark.mjs`, luego `bench import` o `scripts/upload-benchmark.mjs` con token opt-in. Detalles y comandos en [README](../README.md#probar-y-comparar) y [contrato](EXTERNAL_BENCHMARKS.md). No atribuir a VELIQ tokens de razonamiento interno no reportados.
+
+A working MCP connection does not establish token savings. Run paired evaluations, keep auxiliary work and retries, aggregate case-level results, and submit explicitly. Uploaded reports remain self-reported.

@@ -13,27 +13,39 @@ VELIQ investiga un idioma artificial composicional y un protocolo opcional para 
 | Idioma | Diccionario 0.1 con IDs estables, parser ASCII, gramática EBNF, literales escapados, negación y prohibición con alcance explícito | La traducción desde español acepta sólo una plantilla; no entiende lenguaje libre |
 | VSR y codec | AST versionado, validación, round-trip formal, fallback, contador exacto de bytes y estimador separado | No hay tokenizador oficial de LLM ni garantías para traducción natural arbitraria |
 | Memoria | SQLite local, ámbitos aislados, referencias por SHA-256, versiones y detección de conflictos | Datos locales en texto plano; sin embeddings |
-| Protocolo | Negociación y recuperación de referencias entre dos peers en proceso | Sin transporte remoto autenticado ni MCP operativo |
+| Protocolo | Negociación y recuperación de referencias entre dos peers en proceso | MCP stdio local operativo; sin transporte remoto autenticado |
 | Runtime | Observe sin cambios de mensajes; Hybrid acotado con controles | No intercepta solicitudes de modelo automáticamente |
 | Interfaces | CLI, TUI y Studio local con datos persistidos | Studio es HTML ligero; configuración avanzada pendiente |
-| Harnesses | Hook aislado OpenCode V1 Observe y SDK/endpoint para reportes de cualquier harness | Falta prueba de carga en OpenCode instalado y adaptadores automáticos específicos |
+| Harnesses | MCP con ocho herramientas; conexión OpenCode 1.18.33 verificada; SDK/endpoint para reportes | Sin interceptación automática universal ni prueba de sesiones de modelo en Codex/Claude |
 | Investigación | Suite automática, 1.000 casos sintéticos, agregación externa por caso, CI | Falta corpus diverso y evaluación funcional con modelos reales |
 
 [Estado detallado](PROGRESS.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md)
 
 ## Requisitos e instalación
 
-- Node.js **24 o superior**. Se usan `node:sqlite` y soporte nativo de TypeScript; no se descargan paquetes para ejecutar el núcleo.
+- Node.js **24 o superior**. Se usan `node:sqlite` y soporte nativo de TypeScript; instalá dependencias del SDK MCP con `npm ci`.
 - Clonar este repositorio y trabajar desde la raíz. Las configuraciones y bases se crean en `.veliq/`, ignorada por Git.
 
 ```bash
 git clone https://github.com/ValentinCabral/veliq.git
 cd veliq
-npm test
+npm ci
+npm run check
 node --experimental-strip-types apps/cli/main.ts init
 ```
 
 Para usar el comando corto `veliq` se puede instalar el enlace local con `npm link` de forma voluntaria. Todos los ejemplos funcionan sin instalación global usando `node --experimental-strip-types apps/cli/main.ts`.
+
+## Conectar a OpenCode, Codex o Claude Code
+
+VELIQ ya expone ocho herramientas MCP reales por stdio (`encode`, `decode`, `validate`, `optimize`, memoria, benchmark y capacidades). Verifiqué la conexión con OpenCode 1.18.33 y el cliente oficial MCP. Desde tu proyecto OpenCode:
+
+```bash
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts install opencode
+opencode mcp list
+```
+
+Para deshacer la configuración, `node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts uninstall opencode`. La instalación conserva las demás entradas y crea respaldo en `.veliq/backups/`. Para Codex y Claude Code, seguí los comandos específicos en [guías por harness](docs/HARNESSES.md); Claude puede exigir aprobación interactiva. También podés iniciar el servidor con `npm run mcp` para un cliente MCP propio. Son herramientas que el agente debe invocar; no interceptan por sí solas todos sus mensajes.
 
 ## Uso cotidiano
 
@@ -104,9 +116,9 @@ Para otro equipo se necesita un endpoint HTTPS expuesto de forma deliberada medi
 - Studio y el endpoint sólo deben usarse en una máquina confiable; no tienen autenticación de lectura multiusuario.
 - Los hashes de protocolo verifican integridad, no identidad del emisor.
 - Las optimizaciones operativas permanecen apagadas salvo activación explícita y verificación del subconjunto.
-- `veliq install opencode` informa la falta de verificación de versión, sin modificar configuraciones. Codex, Claude Code, MCP y A2A todavía no tienen adaptadores operativos.
+- `veliq install opencode` configura MCP en el proyecto con respaldo privado y `uninstall opencode` lo revierte. Codex y Claude Code usan el mismo servidor MCP stdio; no hay interceptor profundo ni adaptador A2A operativo.
 
-[Seguridad](docs/SECURITY.md) · [Especificación del idioma](docs/language/LANGUAGE_SPEC.md) · [Protocolo](docs/PROTOCOL_SPEC.md) · [Medición](docs/TOKEN_OPTIMIZATION.md)
+[Seguridad](docs/SECURITY.md) · [Especificación del idioma](docs/language/LANGUAGE_SPEC.md) · [Protocolo](docs/PROTOCOL_SPEC.md) · [Herramientas MCP](docs/MCP_SPEC.md) · [Medición](docs/TOKEN_OPTIMIZATION.md)
 
 ## Contribuir
 
@@ -127,16 +139,17 @@ VELIQ researches a compositional artificial language and an optional protocol fo
 - Observe runtime, guarded Hybrid proposal, CLI, interactive TUI, and local Studio backed by SQLite.
 - External benchmark schema, per-case aggregator, authenticated opt-in HTTP ingestion, SDK client, and automated tests.
 
-**Not implemented:** free-form natural-language translation, provider-specific tokenizers, actual model cost measurement, remote authenticated agent transport, an operational MCP server, and verified deep OpenCode/Codex/Claude Code adapters. See [progress](PROGRESS.md) and [roadmap](docs/ROADMAP.md).
+**Not implemented:** free-form natural-language translation, provider-specific tokenizers, actual model cost measurement, remote authenticated agent transport, transparent deep interception, or A2A. Local MCP tools work and OpenCode connectivity was verified. See [progress](PROGRESS.md) and [roadmap](docs/ROADMAP.md).
 
 ## Install and run
 
-Node.js **24+** is required. No npm dependencies or API keys are needed for the local core.
+Node.js **24+** is required. Run `npm ci` to install the official MCP SDK and its locked dependencies; no model API keys are needed.
 
 ```bash
 git clone https://github.com/ValentinCabral/veliq.git
 cd veliq
-npm test
+npm ci
+npm run check
 node --experimental-strip-types apps/cli/main.ts init
 npm run demo
 npm run tui
@@ -155,6 +168,17 @@ node --experimental-strip-types apps/cli/main.ts bench list
 ```
 
 The demo creates VSR from a supported Spanish template, produces VELIQ, counts local bytes, exchanges a reference between two in-process peers, recovers it, preserves the no-delete prohibition, and records data displayed in Studio. It does **not** call an LLM or prove remote interoperability.
+
+## Connect to AI harnesses
+
+VELIQ now serves eight real tools through the official MCP SDK over stdio. OpenCode 1.18.33 reported the project installation as connected. From your OpenCode project:
+
+```bash
+node /ABSOLUTE/PATH/veliq/apps/cli/main.ts install opencode
+opencode mcp list
+```
+
+Run `uninstall opencode` to remove the VELIQ entry while preserving the rest of the configuration and a private backup. See [harness recipes](docs/HARNESSES.md) for Codex and Claude Code commands, approval and verification steps. `npm run mcp` starts the server for other MCP clients. These are callable tools, not an automatic interceptor of every model request.
 
 ## Run a comparable external evaluation
 
