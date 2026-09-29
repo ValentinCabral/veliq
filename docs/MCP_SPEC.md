@@ -5,16 +5,16 @@ Servidor local stdio basado en `@modelcontextprotocol/sdk` 1.31.0, Zod y Node 24
 | Herramienta | Entrada | Resultado |
 |---|---|---|
 | `veliq.capabilities` | sin argumentos | capacidades y límites reales |
-| `veliq.encode` | `text`, `format=natural|spanish|veliq`, `language=es|en|pt|fr|de|it|nl|zh|ja|ko`, `surface=formal|compact` | texto VELIQ, VSR y original verificado |
-| `veliq.decode` | `text`, `format=veliq|compact|vsr` | texto natural sólo si existe original verificable; diagnóstico formal |
+| `veliq.encode` | `text`, `format=natural|spanish|veliq`, `language=es|en|pt|fr|de|it|nl|zh|ja|ko`, `surface=formal|compact|c2|c3` | texto VELIQ, VSR y original verificado |
+| `veliq.decode` | `text`, `format=veliq|compact|c2|c3|vsr` | texto natural sólo si existe original verificable; diagnóstico formal |
 | `veliq.validate` | `text`, `knownReferences?` | sintaxis, tipos y referencias explícitas |
-| `veliq.optimize` | `text`, `language`, `mode=observe|hybrid`, `counter=bytes|cl100k_base|o200k_base` | estrategia, salida, conteo etiquetado y fallback; C1 no se habilita sin negociación; no modifica automáticamente el prompt |
+| `veliq.optimize` | `text`, `language`, `mode=observe|hybrid`, `counter=bytes|cl100k_base|o200k_base`, `c2Negotiated=false`, `c3Negotiated=false`, `setupPaid=false` | propuesta, salida, conteo y fallback; perfiles exigen compatibilidad declarada y glosario contabilizado; no modifica automáticamente el prompt |
 | `veliq.memory.store` | `id`, `scope`, `kind`, `body`, `provenance`, `expectedVersion?` | ID, versión y hash |
 | `veliq.memory.retrieve` | `scope`, `query?`, `limit?` | recuerdos del ámbito exacto y contenido original verificado por hash |
 | `veliq.memory.exact.store` | `id`, `scope`, `document={version,constraints,records}`, `expectedVersion?` | almacén versionado de documento con registros únicos |
 | `veliq.memory.exact.select` | `id`, `scope`, `recordId` | registro exacto, restricciones, hashes y versión para auditoría |
 | `veliq.pick` | `id`, `scope`, `recordId` | sólo registro exacto y restricciones para contexto del modelo; falla si falta |
-| `veliq.benchmark` | `action=synthetic|multilingual|selective|list|ingest`, `run?` | benchmarks offline de texto o corridas externas autodeclaradas |
+| `veliq.benchmark` | `action=synthetic|multilingual|selective|harness|list|ingest`, `run?` | benchmarks offline de texto o corridas externas autodeclaradas |
 
 `scope` exige las cinco claves `user`, `workspace`, `project`, `session` y `agent`. Los esquemas de entrada se validan mediante Zod. Los errores de ejecución se devuelven con `isError: true`; no se ejecutan comandos enviados por el modelo. La memoria queda en texto plano local: no guardar secretos. `benchmark.ingest` requiere una corrida explícita y la etiqueta como autodeclarada. Los contadores son bytes UTF-8 locales, no tokens de un proveedor.
 

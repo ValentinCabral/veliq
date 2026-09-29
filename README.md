@@ -4,7 +4,9 @@
 
 VELIQ investiga un idioma artificial composicional y un protocolo opcional para intercambiar significado entre agentes de IA. La versión actual es un **prototipo 0.1 alpha**, ejecutable sin cuentas ni claves. La interfaz del usuario sigue en lenguaje natural; VELIQ se usa sólo en los caminos internos que se habiliten explícitamente.
 
-> **Resultado actual:** medimos 1.000 textos paralelos controlados en diez idiomas con dos tokenizaciones reales. La sintaxis compacta C1 reduce tokens de texto en algunas combinaciones y empeora inglés y chino en ambas. No hay evidencia de ahorro monetario ni de comprensión por modelos. El benchmark anterior de bytes sigue disponible.
+> **Mejora del idioma C3:** en 800 instrucciones sintéticas soportadas, C3 reduce **37,45 %** (`cl100k_base`) y **35,14 %** (`o200k_base`) de los tokens de texto frente al mejor baseline natural probado, incluyendo redacción concisa y encabezados que comparten el ID. Se incluye un glosario compartido. Parser, CLI y MCP funcionan y preservan VSR; no se comprobó comprensión ni costo de un modelo.
+
+**Meta pendiente:** esa ventaja acotada no demuestra 30–40 % en el uso normal de harnesses. El [corpus mixto](research/benchmarks/harness-results-2026-09-29.json) incluye además 200 fragmentos exactos de código/documentación que no se modifican, y su mejora agregada es menor. Si el glosario se paga por llamada, la estrategia usa fallback y no mejora el baseline. Un historial compartido tampoco implica que el proveedor facture el glosario sólo una vez. No existe ahorro automático demostrado sólo por instalar MCP. [Metodología](docs/BENCHMARKS.md).
 
 **Ahorro comprobado en una tarea acotada:** recuperación exacta por ID sobre documentos compartidos. En 100 consultas a un documento de 100 registros, `veliq.pick` reduce **96,03 %** de los tokens de texto de entrada bajo `cl100k_base` en el caso español, incluyendo carga inicial y llamadas representadas como texto. Una búsqueda convencional equivalente es **0,42 % más barata**. El beneficio proviene de no reenviar el documento completo; no prueba que el idioma VELIQ reduzca el costo de un LLM. [Método y límites](docs/BENCHMARKS.md).
 
@@ -12,14 +14,14 @@ VELIQ investiga un idioma artificial composicional y un protocolo opcional para 
 
 | Componente | Disponible hoy | Límite |
 |---|---|---|
-| Idioma | Diccionario 0.1 con IDs estables, parser formal y perfil compacto C1 con alcance explícito | Una sola plantilla controlada en diez idiomas; no entiende lenguaje libre |
-| VSR y codec | AST versionado, round-trip formal/C1, fallback, contador de bytes | Los encodings `tiktoken` se usan en benchmark offline; runtime MCP sólo cuenta bytes |
+| Idioma | Diccionario 0.1 con IDs estables, parser formal y C1/C2/C3; ligaduras locales, alcance y aridad | Ocho familias controladas en español/inglés y una en otros ocho idiomas; no entiende lenguaje libre |
+| VSR y codec | AST versionado, round-trip formal/C1/C2/C3, fallback, contador de bytes y `tiktoken` opcional | Cuenta texto, no solicitudes completas ni consumo del proveedor |
 | Memoria | SQLite local, ámbitos aislados, referencias por SHA-256, versiones y detección de conflictos | Datos locales en texto plano; sin embeddings |
 | Protocolo | Negociación y recuperación de referencias entre dos peers en proceso | MCP stdio local operativo; sin transporte remoto autenticado |
 | Runtime | Observe sin cambios de mensajes; Hybrid acotado con controles | No intercepta solicitudes de modelo automáticamente |
 | Interfaces | CLI, TUI y Studio local con datos persistidos | Studio es HTML ligero; configuración avanzada pendiente |
-| Harnesses | MCP con once herramientas; conexión OpenCode 1.18.33 verificada; SDK/endpoint para reportes | Sin interceptación automática universal ni prueba de sesiones de modelo en Codex/Claude |
-| Investigación | Conteos `tiktoken` multilingües y de recuperación selectiva, comparación con búsqueda convencional, agregación externa y CI | Falta corpus diverso y evaluación funcional con modelos reales |
+| Harnesses | MCP con once herramientas; OpenCode 1.18.33 conectado; instaladores de hooks Observe por proyecto | Hooks probados localmente; Codex/Claude requieren confianza/aprobación y prueba de sesión; no ahorro automático |
+| Investigación | Conteos `tiktoken` multilingües, mixtos y de recuperación selectiva, baseline natural conciso, agregación externa y CI | Falta corpus representativo y evaluación funcional con modelos reales |
 
 [Estado detallado](PROGRESS.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md)
 
@@ -56,6 +58,9 @@ node --experimental-strip-types apps/cli/main.ts doctor
 node --experimental-strip-types apps/cli/main.ts status
 node --experimental-strip-types apps/cli/main.ts encode 'Analiza el error "1" y no elimines los archivos originales.'
 node --experimental-strip-types apps/cli/main.ts encode --lang en --compact 'Analyze error "1" and do not delete the original files.'
+node --experimental-strip-types apps/cli/main.ts encode --lang en --c2 'Transfer result "1" to agent "agent-2".'
+node --experimental-strip-types apps/cli/main.ts encode --lang en --c3 'Analyze error "case-001", fix it, and verify tests "case-001".'
+node --experimental-strip-types apps/cli/main.ts decode --c3 'case-001 sen error nar error sel tests'
 node --experimental-strip-types apps/cli/main.ts decode --compact 'sen@error:1;pro{del@archivos:originales}'
 node --experimental-strip-types apps/cli/main.ts decode 'pro(del(ri("archivos:originales")))'
 npm run tui
@@ -81,11 +86,14 @@ python3 -m venv .venv-research
 .venv-research/bin/pip install -r research/benchmarks/requirements.txt
 .venv-research/bin/python research/benchmarks/multilingual.py > resultado-multilingue.json
 .venv-research/bin/python research/benchmarks/selective.py > resultado-selectivo.json
+.venv-research/bin/python research/benchmarks/harness.py > resultado-mixto.json
 ```
 
 Los benchmarks son sintéticos; el lingüístico repite una plantilla y el selectivo repite consultas a un documento estructurado. Los resultados cuentan texto exactamente con dos tokenizaciones pero **no** solicitudes completas ni precisión de tarea. [Resultados y metodología](docs/BENCHMARKS.md) · [JSON reproducible](research/benchmarks/results-2026-09-29.json). Para resultados externos, ejecutá el **mismo corpus** con baseline y candidata, modelo/configuración comparables y parámetros controlados. Registrá por cada caso tokens de entrada, salida, overhead (incluidas traducciones/instrucciones auxiliares), reintentos, veredicto funcional y violaciones críticas. Conservá el conteo como `provider-reported`, `exact-text`, `estimated` o `local-bytes` según su origen; no mezcles unidades.
 
 La [medición selectiva](research/benchmarks/selective-results-2026-09-29.json) usa diez documentos sintéticos, 100 registros y 100 consultas exactas por idioma; valida IDs, cuerpo, restricciones y hash. Conectá un harness MCP a `veliq.memory.exact.store` para guardar el documento con ámbito y a `veliq.pick` para recuperar sólo el registro. Si el receptor necesita todo el documento o no existe el ID, recuperá la fuente completa o dejá fallar la consulta; no inventes contenido. La memoria local sigue sin cifrado, por lo que no debe guardar secretos.
+
+El [benchmark mixto C2/C3](research/benchmarks/harness-results-2026-09-29.json) distingue instrucciones del agente de código, documentación y resultados exactos. `benchmark --harness archivo.jsonl` analiza un corpus propio **sólo por acción explícita**, sin subir contenido. `install opencode-observe`, `install codex-observe` o `install claude-observe` configuran observación automática por proyecto tras reiniciar y aprobar los hooks del harness. No añaden contexto ni cambian resultados; registran bytes/metadatos privados, no tokens del proveedor. `status`, TUI y Studio muestran esos registros. La captura de texto OpenCode requiere `VELIQ_CAPTURE_CONTENT=1` y revisión por posibles secretos. [Guía y límites](docs/HARNESSES.md) · [Objetivo de uso diario](docs/DAILY_USE.md).
 
 El archivo [de ejemplo por caso](examples/case-results.jsonl) muestra el formato; sus números son ficticios. Después de crear `resultados.jsonl` y `corpus.jsonl`:
 
@@ -140,16 +148,19 @@ Ejecutá `npm test`, describí procedencia y límites de cualquier benchmark, y 
 
 VELIQ researches a compositional artificial language and an optional protocol for exchanging meaning between AI agents. The current **0.1 alpha** is a runnable, local prototype. Users continue to interact in natural language; internal VELIQ representations are used only where explicitly enabled.
 
-> **Measured so far:** a parallel synthetic benchmark counts exact plain-text tokens for 100 IDs in each of ten languages, under two real tokenizations. Compact C1 improves some combinations and regresses on English and Chinese under both. This is **not** evidence of lower model cost or comprehension. External runs remain self-reported.
+> **C3 language improvement:** 800 supported synthetic instructions use **37.45%** (`cl100k_base`) and **35.14%** (`o200k_base`) fewer plain-text tokens than the best tested natural baseline, including concise wording and shared-ID headings, with one shared glossary. C3 has real CLI/MCP parsers and VSR round-trip checks. Model comprehension and cost are not measured.
+
+**The 30–40% normal-harness target remains unproven.** The mixed proxy adds 200 exact code/tool/document excerpts and shows a smaller aggregate gain. A glossary per independent call eliminates the measured advantage; shared context does not mean the provider bills it once. Installing MCP does not automatically optimize every model request. See the committed mixed report and [daily-use plan](docs/DAILY_USE.md).
 
 **Measured savings for a bounded task:** exact-ID retrieval from a shared 100-record document over 100 queries uses **96.03% fewer plain-text input tokens** under `cl100k_base` for Spanish, including a one-time storage call and each textual tool call. Equivalent conventional retrieval is **0.42% cheaper**. The benefit comes from selecting relevant context, not from proving that the VELIQ language itself saves model tokens. [Method and limitations](docs/BENCHMARKS.md).
 
 ## What works
 
-- Versioned ASCII dictionary and parsers for formal/C1 syntax, typed VSR subset, explicit prohibition scope, round-trip validation, and one controlled template in ten declared languages.
+- Versioned ASCII dictionary and formal/C1/C2/C3 parsers, typed VSR subset, explicit prohibition scope and local referent binding; eight controlled instruction families in English/Spanish and one in eight additional languages.
 - Local SQLite memory, content hashes, version conflicts, and two in-process peers with reference recovery.
 - Observe runtime, guarded Hybrid proposal, CLI, interactive TUI, and local Studio backed by SQLite.
 - External benchmark schema, per-case aggregator, authenticated opt-in HTTP ingestion, SDK client, and automated tests.
+- Project-local automatic Observe hook installers for OpenCode/Codex/Claude Code. They preserve operational outputs, add no model context, record private metadata only, and report zero savings. Codex hooks require review and trust.
 
 **Not implemented:** free-form natural-language translation, runtime provider token usage, actual model cost measurement, remote authenticated agent transport, transparent deep interception, or A2A. Offline research uses official `tiktoken` Python encodings for exact *text* counts. Local MCP tools work and OpenCode connectivity was verified. See [progress](PROGRESS.md) and [roadmap](docs/ROADMAP.md).
 
@@ -176,6 +187,8 @@ Open `http://127.0.0.1:4173` for Studio. Set `VELIQ_PORT` or `VELIQ_HOME` to cha
 node --experimental-strip-types apps/cli/main.ts doctor
 node --experimental-strip-types apps/cli/main.ts encode 'Analiza el error "1" y no elimines los archivos originales.'
 node --experimental-strip-types apps/cli/main.ts encode --lang en --compact 'Analyze error "1" and do not delete the original files.'
+node --experimental-strip-types apps/cli/main.ts encode --lang en --c3 'Analyze error "case-001", fix it, and verify tests "case-001".'
+node --experimental-strip-types apps/cli/main.ts decode --c3 'case-001 sen error nar error sel tests'
 node --experimental-strip-types apps/cli/main.ts decode --compact 'sen@error:1;pro{del@archivos:originales}'
 node --experimental-strip-types apps/cli/main.ts decode 'pro(del(ri("archivos:originales")))'
 node --experimental-strip-types apps/cli/main.ts bench list
@@ -194,6 +207,8 @@ python3 -m venv .venv-research
 cmp multilingual-result.json research/benchmarks/results-2026-09-29.json
 .venv-research/bin/python research/benchmarks/selective.py > selective-result.json
 cmp selective-result.json research/benchmarks/selective-results-2026-09-29.json
+.venv-research/bin/python research/benchmarks/harness.py > harness-result.json
+cmp harness-result.json research/benchmarks/harness-results-2026-09-29.json
 ```
 
 The committed [measurement and full methodology](docs/BENCHMARKS.md) compare original, formal VELIQ, C1, and VSR with `cl100k_base` and `o200k_base`, including glossary amortization scenarios. These are exact plain-text encoding counts only. Results contradict any claim of universal savings over all languages; English and Chinese are observed regressions. Model understanding, full request overhead, accuracy, cost, and different model families remain unmeasured.

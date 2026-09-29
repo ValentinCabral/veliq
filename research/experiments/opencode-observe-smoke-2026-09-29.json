@@ -1,0 +1,16 @@
+{
+  "harness": "opencode",
+  "version": "1.18.33",
+  "probe": "local synthetic shell command; no LLM call",
+  "outputPreserved": true,
+  "observations": {
+    "mode": "observe",
+    "countKind": "local-bytes",
+    "observations": 0,
+    "originalBytes": 0,
+    "savedBytes": 0,
+    "byHarness": {},
+    "errors": 0
+  },
+  "hookVerified": false
+}

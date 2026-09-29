@@ -15,3 +15,34 @@ scope = "pro" | "obl" | "per" | "hyp" | "nu" ;
 reference = reference_char, { reference_char } ;
 reference_char = letter | digit | "_" | "." | ":" | "/" | "-" ;
 (* Sin espacios. Una secuencia ; tiene alcance dentro de {...} cuando está agrupada. *)
+
+(* Perfil C2 experimental: añade destino de transferencia y relaciones binarias. *)
+c2 = c2_term, { ";", c2_term } ;
+c2_term = "@", reference | "^", reference
+        | action, "@", reference
+        | "dar@", reference, ">^", reference
+        | scope, "{", c2, "}"
+        | binary, "{", c2, "}", "{", c2, "}"
+        | "par", "{", c2, "}", "{", c2, "}" ;
+binary = "pre" | "pos" | "kon" | "kal" ;
+(* El parser exige forma canónica, valida tipos y no permite alcance implícito. *)
+
+(* C3 experimental: ligadura local de referentes y composición por aridad. *)
+c3 = binding, " ", clause, { " ", clause } ;
+binding = reference ; (* "-" significa que no hay referente ligado. *)
+clause = action, " ", c3_reference
+       | "ri ", c3_reference | "agn ", reference
+       | "dar ", c3_reference, " ", reference
+       | scope, " ", clause
+       | c3_binary, " ", clause, " ", clause
+       | "seq ", positive_integer, " ", clause, { " ", clause } ;
+c3_reference = "@", reference | role ;
+role = letter, { letter | digit | "_" | "-" } ;
+c3_binary = binary | "par" ;
+positive_integer = nonzero_digit, { digit } ;
+(* El parser consume exactamente N cláusulas después de seq N, 1 <= N <= 1000.
+   role se expande a role:binding. @id se preserva literalmente; agentes nunca se ligan.
+   Sólo un espacio ASCII; sin espacios sobrantes. Profundidad máxima: 32.
+   Precedencia: cada raíz consume su aridad declarada; cláusulas superiores forman seq.
+   La forma canónica elige el sufijo más frecuente en referencias ri, desempate ASCII.
+   print(parse(text)) debe coincidir; no se adivinan agrupaciones o IDs. *)

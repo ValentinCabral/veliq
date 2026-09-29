@@ -14,7 +14,7 @@ test('diez plantillas controladas preservan prohibición, referencia y round-tri
     const compact=printCompact(v.root);
     assert.equal(semanticId({...v,root:parseCompact(compact)}),semanticId(v));
     assert.equal(semanticId(decode(canonical(v))),semanticId(v));
-    assert.equal(optimize(original,v,new ByteTokenizer(),'native','',{compactNegotiated:true}).output,compact);
+    assert.equal(optimize(original,v,new ByteTokenizer(),'native','',{compactNegotiated:true,setupPaid:true}).output,compact);
     if(language!=='es')assert.notEqual(toSpanish(v),original);
   }
 });

@@ -1,5 +1,9 @@
 # Historial
 
+## 0.1.0-alpha.6 · 2026-09-29
+
+Perfiles C2/C3 con transferencia, composición binaria, ligaduras locales de referentes y aridad explícita; CLI/MCP/Studio y fallback con glosario. Ocho familias naturales es/en y baseline convencional con encabezado de ID. Benchmark de texto: C3 mejora 35–37 % frente al mejor baseline probado en el subconjunto sintético de instrucciones; no se extrapola a sesiones normales. 1.000 casos estructurales de round-trip adicionales. Instaladores de observación automática por proyecto para Codex/Claude y plugin OpenCode sin SQLite, con metadatos privados y visualización; no modifican resultados ni ahorran tokens. Prueba externa OpenCode 1.18.33 `session.shell`: salida preservada, evento del hook no verificado. Plan de uso diario y límites publicados. No se llamaron modelos externos.
+
 ## 0.1.0-alpha.1 · 2026-09-29
 
 Primer subconjunto formal, parser, SQLite local, protocolo entre peers en proceso, CLI, Studio, benchmark sintético y hook OpenCode V1 Observe aislado. Se corrigió una doble negación semántica antes de entregar el prototipo. No hay evidencia de ahorro neto de tokens comerciales.

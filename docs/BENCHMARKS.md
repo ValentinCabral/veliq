@@ -41,3 +41,27 @@ cmp seleccion.json research/benchmarks/selective-results-2026-09-29.json
 | o200k_base | 607.300 | 23.375 | 96,15 % | −0,45 % |
 
 Los 20 resultados de diez idiomas están en `research/benchmarks/selective-results-2026-09-29.json`; todos superan 95 % en **este escenario repetitivo concreto**, con punto de equilibrio tras dos consultas. Una búsqueda convencional por ID consigue prácticamente el mismo ahorro y es ligeramente más barata: **la ventaja es de la recuperación selectiva, no del idioma VELIQ**. La comparación con el documento completo representa sistemas que reenvían todo el contexto por consulta; no se extrapola a sistemas que ya recuperan fragmentos. VELIQ aporta aquí validación de esquema, aislamiento por ámbito, versiones, hashes y preservación de restricciones, con un pequeño costo textual adicional.
+
+## Aproximación de carga de un harness: C2 y C3
+
+`research/benchmarks/harness.py` construye un corpus mixto de **800 instrucciones sintéticas controladas** (ocho familias × 50 IDs × español/inglés) y **200 fragmentos exactos** de código/documentación de este repositorio público. Los fragmentos etiquetados `tool-result` son un proxy de documentos leídos por herramientas, no resultados observados en un harness. No son trazas de OpenCode ni una distribución representativa de producción. Las siete familias nuevas cubren corrección/verificación, transferencia con destino, orden temporal, condición, prohibición, secuencia y persistencia. C2/C3 tienen parsers propios y cada caso admitido se compara por ID semántico con VSR. Código y fragmentos exactos se conservan sin transformación.
+
+La línea de base convencional elige por caso el menor conteo de: texto original, redacción natural concisa y redacción natural con un encabezado que comparte el ID (`ID "case-001": analyze and fix error; verify tests.`). Las tres variantes soportadas tienen VSR idéntico. Esto evita atribuir toda la mejora a no repetir un ID, algo que también permite el lenguaje natural. Los 50 IDs por familia **no equivalen a 50 tareas independientes**; no se declara significancia estadística ni cobertura general.
+
+```bash
+.venv-research/bin/python research/benchmarks/harness.py > harness.json
+cmp harness.json research/benchmarks/harness-results-2026-09-29.json
+# Opt-in: JSONL propio con text, category y language; no se guarda su contenido en el reporte.
+.venv-research/bin/python research/benchmarks/harness.py mis-trazas.jsonl > mi-reporte.json
+```
+
+Resultados estables del subconjunto de **800 instrucciones**:
+
+| Conteo de texto | Original | Mejor natural probado | C2 + un glosario | C3 + un glosario | C3 vs original | C3 vs mejor natural |
+|---|---:|---:|---:|---:|---:|---:|
+| cl100k_base | 13.450 | 11.150 | 10.994 | 6.974 | 48,15 % | 37,45 % |
+| o200k_base | 12.900 | 10.600 | 10.494 | 6.875 | 46,71 % | 35,14 % |
+
+C3 introduce ligaduras locales de referentes y gramática por aridad sin cambiar IDs o significado. El resultado agregado de los 1.000 casos se publica en `research/benchmarks/harness-results-2026-09-29.json`: es menor porque los fragmentos exactos permanecen intactos. **Ese agregado cambia cuando cambian los archivos de este repositorio usados como corpus**, por lo que siempre se compara con el SHA-256 versionado y CI regenera el mismo estado. Los campos `byCategory`, `byLanguage` y `previousConciseTextTokens` permiten auditar cada comparación y distinguir el baseline anterior del fortalecido.
+
+Estos números son **sólo tokens de cadenas**, con selección retrospectiva de la opción más corta (cota optimista), no costos totales de un modelo. C3 paga 174/175 tokens de glosario una vez en el escenario compartido. Con glosario por llamada, **C2 y C3 obtienen 0 % incremental** porque se preserva el baseline mediante fallback. Una API de chat puede cobrar el glosario conservado en historial en todas las solicitudes: retener contexto no equivale a facturarlo una sola vez. No se midieron comprensión, precisión de tarea, tokens de salida ni consumo reportado por proveedores. La meta de 30–40 % en uso normal **no está lograda**. Un corpus propio puede incluir `agent-instruction`, `code`, `tool-result` y `document`; las frases no reconocidas quedan intactas, sin inferir equivalencia. Ningún dato se envía fuera del proceso local. La captura de resultados de herramientas de OpenCode es opcional y potencialmente sensible: revisar/redactar antes de analizar o compartir.

@@ -1,7 +1,8 @@
-import {randomUUID} from 'node:crypto';
-import {readFileSync,writeFileSync,existsSync,mkdirSync,renameSync,statSync} from 'node:fs';
+import {randomUUID,createHash} from 'node:crypto';
+import {readFileSync,writeFileSync,existsSync,mkdirSync,renameSync,statSync,unlinkSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {pathToFileURL} from 'node:url';
 const command=fileURLToPath(new URL('../../apps/cli/main.ts',import.meta.url));
 export function connectOpenCode(project=process.cwd()){
   const dir=resolve(project),target=join(dir,'opencode.json');
@@ -24,4 +25,24 @@ export function disconnectOpenCode(project=process.cwd()){
   const current=mcp.veliq as {command?:string[]};if(!current.command?.includes(command))throw new Error('Entrada veliq ajena o modificada: sin cambios');
   const backup=join(resolve(project),'.veliq','backups',`opencode.json.${Date.now()}-${randomUUID()}.bak`);mkdirSync(join(resolve(project),'.veliq','backups'),{recursive:true,mode:0o700});writeFileSync(backup,readFileSync(target),{mode:0o600,flag:'wx'});
   const copy={...mcp};delete copy.veliq;const next={...config,mcp:copy},temp=join(resolve(project),`.opencode.json.veliq-${process.pid}.tmp`);writeFileSync(temp,JSON.stringify(next,null,2)+'\n',{mode:statSync(target).mode&0o777,flag:'wx'});renameSync(temp,target);return {target,backup};
+}
+const observerSource=fileURLToPath(new URL('./observe.mjs',import.meta.url));
+const hash=(body:Buffer)=>createHash('sha256').update(body).digest('hex');
+export function installOpenCodeObserver(project=process.cwd()){
+  const dir=resolve(project),pluginDir=join(dir,'.opencode','plugins'),target=join(pluginDir,'veliq-observe.js');
+  if(existsSync(target))throw new Error('Plugin VELIQ ya existe: no sobrescribir');
+  const receipt=join(dir,'.veliq','opencode-observer.json');
+  if(existsSync(receipt))throw new Error('Existe recibo del observador anterior: revisar antes de instalar');
+  const metricsUrl=pathToFileURL(fileURLToPath(new URL('../../packages/metrics/observations.mjs',import.meta.url))).href;
+  const body=Buffer.from(readFileSync(observerSource,'utf8').replace("'../../packages/metrics/observations.mjs'",JSON.stringify(metricsUrl)));mkdirSync(pluginDir,{recursive:true});mkdirSync(join(dir,'.veliq'),{recursive:true,mode:0o700});
+  writeFileSync(target,body,{mode:0o600,flag:'wx'});
+  try{writeFileSync(receipt,JSON.stringify({target,sha256:hash(body)}),{mode:0o600,flag:'wx'})}catch(e){unlinkSync(target);throw e}
+  return {target,receipt,capture:'desactivada por defecto; VELIQ_CAPTURE_CONTENT=1 habilita JSONL local'};
+}
+export function uninstallOpenCodeObserver(project=process.cwd()){
+  const dir=resolve(project),receipt=join(dir,'.veliq','opencode-observer.json'),target=join(dir,'.opencode','plugins','veliq-observe.js');
+  if(!existsSync(receipt)||!existsSync(target))throw new Error('Plugin o recibo inexistente: sin cambios');
+  const installed=JSON.parse(readFileSync(receipt,'utf8')) as {target:string;sha256:string};
+  if(installed.target!==target||installed.sha256!==hash(readFileSync(target)))throw new Error('Plugin modificado: sin eliminar');
+  unlinkSync(target);unlinkSync(receipt);return {removed:target};
 }

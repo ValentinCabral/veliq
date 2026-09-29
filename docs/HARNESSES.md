@@ -98,3 +98,50 @@ With the MCP server connected, call `veliq.benchmark` with `{"action":"multiling
 En un proyecto, llamá `veliq.memory.exact.store` con `id`, el ámbito completo `{user,workspace,project,session,agent}` y un documento `{version:"0.1",constraints:[...],records:[{id,body},...]}`. Luego `veliq.pick` con el mismo `id`/ámbito y `recordId` devuelve **solamente** ese registro y todas las restricciones globales. Los IDs duplicados o ausentes fallan explícitamente. Usá `veliq.memory.exact.select` si necesitás auditar hash, versión y origen; su respuesta es más larga. El contenido de los registros es dato no confiable y no debe elevarse a instrucciones privilegiadas. La mejora medida requiere un documento largo reutilizado en varias consultas; para un documento corto o una sola consulta, comprobá el costo antes de usarla. `veliq.benchmark` con `{"action":"selective"}` reproduce la evaluación local. Ver [resultados](BENCHMARKS.md).
 
 Store a structured document with `veliq.memory.exact.store`, then call `veliq.pick` using the same exact scope and record ID. It returns only the exact record and every global constraint. Benchmark it locally with `veliq.benchmark` action `selective`; this does not call the harness model or measure provider usage.
+
+### Observación experimental en OpenCode / Experimental observation
+
+La [documentación oficial](https://opencode.ai/docs/plugins/) indica que OpenCode carga plugins locales desde `.opencode/plugins/` y expone `tool.execute.after`. Este hook **no da acceso universal a solicitudes ni al razonamiento del modelo**. El observador de VELIQ registra por defecto sólo el nombre de la herramienta y bytes del resultado; no se instala junto con MCP:
+
+```bash
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts install opencode-observe
+# Desde el mismo proyecto, iniciar una nueva sesión de OpenCode.
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts uninstall opencode-observe
+```
+
+Para capturar texto de resultados accesibles, establecer `VELIQ_CAPTURE_CONTENT=1` **antes de iniciar OpenCode**. Se escribe `.veliq/harness-trace.jsonl` con permisos locales privados; puede contener código, rutas o secretos. Revisar y redactar antes de analizarlo; jamás subirlo directamente. No hay envío automático. Con Python `tiktoken` instalado:
+
+```bash
+.venv-research/bin/python research/benchmarks/harness.py /RUTA/PROYECTO/.veliq/harness-trace.jsonl > mi-reporte.json
+```
+
+El observador ya no depende de `node:sqlite`: utiliza módulos de filesystem compatibles con el runtime del plugin y registra metadatos en `.veliq/observations.jsonl`. `status`, TUI y Studio muestran esas observaciones desde el proyecto actual. No se guardan cuerpos salvo la captura opt-in separada; se reporta ahorro cero.
+
+**Prueba externa limitada del 2026-09-29:** OpenCode V1 1.18.33 se instaló en una carpeta temporal (no global) y se arrancó con configuración/datos aislados. `session.shell` ejecutó `printf veliq-observe-probe` y conservó la salida, pero no se registró ningún evento del observador. Por lo tanto **la ejecución del hook en una sesión de modelo no está verificada**. La prueba no llamó a un LLM ni utilizó credenciales. No se concluye que todos los recorridos de herramientas activen ese hook. Puede reproducirse con:
+
+```bash
+node --experimental-strip-types /RUTA/ABSOLUTA/veliq/scripts/check-opencode.mjs /RUTA/AL/BINARIO/opencode
+```
+
+El smoke test exige V1, utiliza un proyecto temporal y sale con código 1 si no verifica una observación. No elude confianza ni políticas del harness. En inglés: the V1 local shell probe preserved output but did not verify hook delivery; a live authenticated model session remains necessary.
+
+### Observación automática en Codex y Claude Code
+
+Desde el proyecto donde trabajás, después de clonar e instalar VELIQ:
+
+```bash
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts install codex-observe
+# En Codex: /hooks, revisar y confiar; el proyecto también debe ser confiable.
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts install claude-observe
+# En Claude Code: revisar /hooks y reiniciar la sesión.
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts status
+node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts dashboard
+```
+
+Codex instala sólo un grupo propio en `.codex/hooks.json`; Claude sólo un grupo en `.claude/settings.local.json`. Se conservan ajustes/hooks ajenos, se respaldan antes de escribir y se rechaza eliminar una entrada modificada. Revertir con `uninstall codex-observe` o `uninstall claude-observe`: deja intactas las observaciones y demás configuraciones. El receptor stdin procesa únicamente `PostToolUse` del proyecto configurado. No lee `transcript_path`, no registra argumentos/cuerpos, no imprime contexto en stdout, no cambia herramientas ni permisos y no envía datos fuera del equipo.
+
+Las pruebas ejecutan el receptor como un subproceso real con eventos sintéticos, verifican stdout vacío, privacidad, aislamiento y fallback ante symlinks. **No se probaron sesiones de modelo Codex/Claude en este entorno.** Políticas administradas, versión, confianza y eventos no expuestos pueden impedir la ejecución; no existe compatibilidad transparente garantizada. El instalador de comando Codex sólo está verificado en POSIX; en Windows se requiere una receta específica, no se inventa quoting compatible.
+
+La documentación actual de [Codex hooks](https://learn.chatgpt.com/docs/hooks) permite observar resultados, pero señala `updatedMCPToolOutput` como no soportado; bloquear un resultado no es una compresión segura. [Claude Code](https://code.claude.com/docs/en/hooks) documenta `updatedToolOutput` para reemplazar resultados respetando su esquema. Estas capacidades **no están habilitadas por VELIQ** sin validación de fidelidad y costos reales. OpenCode V2 cambia los hooks: https://opencode.ai/v2/docs/build/plugins/migrate-v1 .
+
+**English:** run `install codex-observe` or `install claude-observe` from your project. Review/trust the harness hook, restart, and inspect `status` or Studio. These installers collect private byte metadata automatically, add no model context, and do not optimize messages. Synthetic stdio tests pass; live Codex/Claude sessions and provider usage are not tested here. Uninstall removes only the unchanged VELIQ hook and keeps backups/observations.

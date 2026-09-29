@@ -2,16 +2,29 @@
 
 | Componente | Estado verificable | Pendiente |
 |---|---|---|
-| Lenguaje/gramática | Parser y diccionario versionado, round-trip formal | Cobertura general, propuesta experimental de raíces |
+| Lenguaje/gramática | Parser formal/C1/C2/C3, ligaduras locales, aridad y round-trip; ocho familias es/en, una en otros ocho idiomas | Cobertura general, comprensión por modelos, propuestas de raíces |
 | VSR | AST, aridad, IDs, procedencia, hash semántico | Tipos profundos, temporalidad y epistemología completas |
-| Codec | Contador byte exacto de perfil artificial, estimador separado, fallback | Tokenizadores comerciales y costos completos |
+| Codec | Bytes exactos, estimador separado, `tiktoken` opcional, selección experimental con glosarios y fallback | Solicitudes completas y costos reportados por proveedor |
 | Protocolo | 2 peers en proceso, negociación y recuperación hash | Transporte externo, auth, ACK durables |
 | Memoria | SQLite, aislamiento exacto, versiones y conflicto | Cifrado, expiración, búsqueda semántica |
-| Runtime/CLI | Observe, Hybrid acotado, comandos básicos | Native seguro entre modelos, instalación de harness |
+| Runtime/CLI | Observe, Hybrid propuesto, CLI/TUI, instalación reversible de MCP y hooks por proyecto | Native seguro entre modelos y reducción automática verificada |
 | Studio | HTML local con endpoints y métricas persistidas | React, configuración completa, gráficos e integraciones |
-| OpenCode | MCP instalado en proyecto y conexión 1.18.33 verificada; hook V1 aislado | Intercepción profunda y V2 |
+| OpenCode | MCP 1.18.33 conectado previamente; instalación V1 local y shell smoke con salida preservada, sin evento de hook | Verificar hook en sesión con modelo; V2 |
 | MCP/Codex/Claude/A2A | MCP stdio con once herramientas y prueba de cliente real; Claude registra pendiente de aprobación | Sesiones de modelo Codex/Claude, A2A |
-| Benchmark | 1000 casos sintéticos, resultado negativo | Corpus diverso y métricas LLM |
+| Benchmark | Texto multilingüe, selección exacta, proxy mixto C2/C3 y baseline natural fuerte; resultados positivos acotados y negativos conservados | Corpus representativo, veredictos funcionales y métricas LLM |
+
+## Avance alpha.6 · mejora lingüística C3 y uso diario
+
+- C2 amplía composición con transferencia y relaciones binarias. C3 agrega ligaduras locales y aridad prefija; reduce referentes repetidos sin omitir el orden, alcance, destinos o IDs. VSR sigue siendo canónico; ningún ID conceptual cambia de significado.
+- Parsers/serializadores, CLI `--c2/--c3`, MCP `surface/format=c3`, Studio, negociación declarativa del optimizador y fallback implementados. Fuera del subconjunto se conserva el original/formal. `setupPaid` es declaración del llamador, no pago probado ni comprensión negociada.
+- Benchmark mixto con 800 instrucciones es/en y 200 fragmentos públicos exactos. El baseline natural se fortaleció con encabezados de ID: C3 usa 6.974/6.875 tokens frente a 11.150/10.600, **37,45 % / 35,14 %** menos con un glosario compartido (`cl100k_base` / `o200k_base`). C2 apenas mejora frente a ese baseline. Agregado mixto menor, versionado por SHA del corpus. Con glosario por llamada, ventaja incremental **0 %** por fallback. No son sesiones reales ni costo de modelos.
+- 1.000 expresiones estructurales generadas con semilla fija preservan hash semántico y forma canónica. Pruebas específicas cubren prohibiciones anidadas, referentes absolutos, destinos, selección, glosario y CLI/MCP. No prueban comprensión LLM.
+- Instaladores de hooks Observe para Codex/Claude por proyecto, con respaldo, recibos y eliminación sólo de entradas propias sin modificar. Receptor stdin real con stdout vacío, metadatos privados, aislamiento y fallos no bloqueantes. Codex requiere revisión/confianza; no se eluden aprobaciones. Sesiones reales de esos harnesses pendientes.
+- OpenCode observer elimina dependencia de `node:sqlite` en Bun. Captura de cuerpos local sólo opt-in, acotada y privada. `status`, TUI y Studio leen observaciones del proyecto actual sin inventar ahorro. Observe siempre reporta 0.
+- Smoke externo sobre OpenCode **1.18.33**, instalado temporalmente: servidor local y `session.shell` ejecutan un comando sintético conservando la salida; **no se recibió un evento del hook**. Registrado como verificación fallida de entrega, no como integración completa. `scripts/check-opencode.mjs` reproduce el chequeo sin LLM/credenciales.
+- Documentación oficial consultada: hooks actuales Codex, Claude y OpenCode V1/V2. MCP no es un interceptor. Plan de producto diario en `docs/DAILY_USE.md`: runner pareado, compilación donde hay significado probado, contexto incremental tipado y política Hybrid con evidencia de beneficio completo.
+- Pendiente crítico: ejecutar sesiones pareadas autenticadas sobre repositorios/tareas representativos, comprobar comprensión C3 y restricciones, incluir esquemas/glosarios repetidos, salidas/reintentos/cache y comparar con optimización nativa. **No afirmar “instalar = ahorrar 30–40 %” ni ventaja sobre todos los idiomas.**
+- Validación local alpha.6: TypeScript estricto y **41 pruebas pasan**; benchmark de bytes conserva 0/1.000 selecciones y 0 % neto en Observe/fallback. Los tres reportes de texto se regeneran y comparan con sus archivos versionados antes de publicar; el smoke OpenCode negativo se conserva aparte, no se mezcla con un benchmark de modelo.
 
 ## Avance alpha.4 · medición multilingüe
 

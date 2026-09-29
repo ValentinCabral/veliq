@@ -1,8 +1,9 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,existsSync,readFileSync,statSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {DatabaseSync} from 'node:sqlite';
+import {observationSummary} from '../packages/metrics/observations.mjs';
 import {VeliqObserve} from '../adapters/opencode/observe.mjs';
-test('hook V1 Observe registra bytes sin cambiar salida',async()=>{const dir=mkdtempSync(join(tmpdir(),'veliq-'));try{const p=await VeliqObserve({directory:dir});const out={output:'resultado exacto'};await p['tool.execute.after']({tool:'read'},out);assert.deepEqual(out,{output:'resultado exacto'});const db=new DatabaseSync(join(dir,'.veliq','opencode-observe.sqlite'));assert.equal((db.prepare('SELECT bytes FROM tool_observations').get() as {bytes:number}).bytes,Buffer.byteLength(out.output));db.close()}finally{rmSync(dir,{recursive:true,force:true})}});
+test('hook V1 Observe registra bytes sin cambiar salida y no captura contenido por defecto',async()=>{const dir=mkdtempSync(join(tmpdir(),'veliq-'));try{const p=await VeliqObserve({directory:dir});const out={output:'resultado exacto'};await p['tool.execute.after']({tool:'read'},out);assert.deepEqual(out,{output:'resultado exacto'});assert.equal(existsSync(join(dir,'.veliq','harness-trace.jsonl')),false);const summary=observationSummary(dir);assert.equal(summary.observations,1);assert.equal(summary.originalBytes,Buffer.byteLength(out.output));assert.equal(summary.savedBytes,0);assert.equal(readFileSync(join(dir,'.veliq','observations.jsonl'),'utf8').includes('resultado exacto'),false)}finally{rmSync(dir,{recursive:true,force:true})}});
+test('captura opt-in de resultado accesible crea JSONL privado y no altera salida',async()=>{const dir=mkdtempSync(join(tmpdir(),'veliq-')),prior=process.env.VELIQ_CAPTURE_CONTENT;process.env.VELIQ_CAPTURE_CONTENT='1';try{const p=await VeliqObserve({directory:dir});const out={output:'texto local de prueba'};await p['tool.execute.after']({tool:'read'},out);assert.equal(out.output,'texto local de prueba');const target=join(dir,'.veliq','harness-trace.jsonl');assert.deepEqual(JSON.parse(readFileSync(target,'utf8')),{category:'tool-result',text:out.output});assert.equal(statSync(target).mode&0o777,0o600)}finally{if(prior===undefined)delete process.env.VELIQ_CAPTURE_CONTENT;else process.env.VELIQ_CAPTURE_CONTENT=prior;rmSync(dir,{recursive:true,force:true})}});
