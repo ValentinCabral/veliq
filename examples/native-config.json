@@ -1,0 +1,8 @@
+{
+  "version": "0.1",
+  "mode": "observe",
+  "model": "openai/gpt-5.4",
+  "encoding": "o200k_base",
+  "jsonTools": ["read", "bash"],
+  "strategies": ["context-reference"]
+}

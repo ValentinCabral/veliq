@@ -10,5 +10,5 @@
     "types": ["node"],
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts", "adapters/**/*.ts", "research/**/*.ts", "tests/**/*.ts", "examples/**/*.ts"]
+  "include": ["apps/**/*.ts", "packages/**/*.ts", "adapters/**/*.ts", "research/**/*.ts", "tests/**/*.ts", "examples/**/*.ts", "scripts/**/*.ts"]
 }

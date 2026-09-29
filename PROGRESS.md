@@ -1,5 +1,18 @@
 # PROGRESS · 2026-09-29
 
+## Avance alpha.7 · las tres mejoras
+
+- Plugin OpenCode V1 automático sobre contexto expuesto: referencia sólo a resultados idénticos con ancla exacta en la misma solicitud; JSON lexical con allowlist. Observe inicial, Hybrid con evidencia y conteo favorable, fallback/auditoría privada. Inputs/prompts/permisos intactos.
+- `install opencode` = MCP + plugin; `opencode-mcp/native` separados; hooks Claude SessionStart/PostModelSwitch/PostToolUse con seguimiento real del modelo y esquema conservado. Codex conserva Observe por bloqueo de su API. V2 pendiente; Claude autenticado no probado.
+- Contexto tipado persistente, selección con instrucciones/restricciones obligatorias, vigencia anotada, FULL/DELTA/ACK con ámbito/base/orden/digest verificados. C3 sólo desde VSR correspondiente al cuerpo y autoridad. CLI/SDK y cuatro herramientas MCP nuevas (quince total).
+- `bench paired` ejecuta sesiones nuevas idénticas, orden alternado, oracle JSON, archivos protegidos, uso expuesto cache/reasoning sin duplicar y latencia completa. Gate explícito bloquea errores, uso ausente, regresiones y hook no aplicado. Envío de agregados desde CI opt-in; sin cuerpos/credenciales en reportes. Consumo interno no expuesto desconocido.
+- Smoke **positivo**: OpenCode 1.18.33 real + endpoint local determinista; dos lecturas, un ancla y una referencia recibidas, archivo intacto, respuesta española. `o200k_base`: 6.812 → 3.471 tokens del contexto de herramientas; 3.341 evitados. No es sesión LLM ni ahorro de solicitud completa. Smoke `session.shell` negativo anterior conservado.
+- Demo incremental: FULL 7.512 bytes → DELTA 569; snapshots idénticos y prohibición conservada. Bytes entre procesos, no tokens de LLM.
+- TypeScript estricto y **52 pruebas pasan**; 1.000 AST C3 y 1.000 JSON dentro de la suite. Reportes offline se regeneran al final y CI los compara.
+- **Pendiente real:** proveedor autenticado no configurado aquí; falta evaluación LLM, comprensión C3, corpus representativo, estadísticas y precios/cache. Ahorro cotidiano 30–40 % no demostrado. No se habilitó Hybrid en el equipo del usuario ni se publicaron servicios/paquetes.
+- Guía español/inglés `docs/NATIVE.md`: instalación diaria, pruebas, activación, envío y límites. El cuadro siguiente es histórico alpha.6; este avance lo actualiza.
+
+
 | Componente | Estado verificable | Pendiente |
 |---|---|---|
 | Lenguaje/gramática | Parser formal/C1/C2/C3, ligaduras locales, aridad y round-trip; ocho familias es/en, una en otros ocho idiomas | Cobertura general, comprensión por modelos, propuestas de raíces |

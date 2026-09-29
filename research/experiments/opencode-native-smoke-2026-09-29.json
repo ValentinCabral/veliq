@@ -1,0 +1,26 @@
+{
+  "harness": "opencode",
+  "version": "1.18.33",
+  "endpoint": "deterministic loopback mock; no external LLM",
+  "requests": 2,
+  "referenceMarkersReceived": 1,
+  "exactAnchorsReceived": 1,
+  "protectedFileUnchanged": true,
+  "finalSpanish": true,
+  "native": {
+    "events": 2,
+    "applied": 1,
+    "originalTokens": 6812,
+    "optimizedTokens": 3471,
+    "overheadTokens": 0,
+    "savedTextTokens": 3341,
+    "countKind": "exact-text",
+    "providerSavings": null,
+    "byStrategy": {
+      "natural": 1,
+      "context-reference": 1
+    }
+  },
+  "hookVerified": true,
+  "providerSavings": null
+}

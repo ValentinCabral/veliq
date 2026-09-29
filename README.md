@@ -16,11 +16,11 @@ VELIQ investiga un idioma artificial composicional y un protocolo opcional para 
 |---|---|---|
 | Idioma | Diccionario 0.1 con IDs estables, parser formal y C1/C2/C3; ligaduras locales, alcance y aridad | Ocho familias controladas en español/inglés y una en otros ocho idiomas; no entiende lenguaje libre |
 | VSR y codec | AST versionado, round-trip formal/C1/C2/C3, fallback, contador de bytes y `tiktoken` opcional | Cuenta texto, no solicitudes completas ni consumo del proveedor |
-| Memoria | SQLite local, ámbitos aislados, referencias por SHA-256, versiones y detección de conflictos | Datos locales en texto plano; sin embeddings |
+| Memoria | SQLite y contexto tipado, selección relevante, FULL/DELTA/ACK entre instancias | Sin cifrado; no presume memoria compartida por el LLM |
 | Protocolo | Negociación y recuperación de referencias entre dos peers en proceso | MCP stdio local operativo; sin transporte remoto autenticado |
-| Runtime | Observe sin cambios de mensajes; Hybrid acotado con controles | No intercepta solicitudes de modelo automáticamente |
+| Runtime | Plugin OpenCode automático; Claude PostToolUse; Hybrid con evidencia, conteo y fallback | V1 verificado con endpoint determinista; Claude autenticado pendiente; Codex Observe |
 | Interfaces | CLI, TUI y Studio local con datos persistidos | Studio es HTML ligero; configuración avanzada pendiente |
-| Harnesses | MCP con once herramientas; OpenCode 1.18.33 conectado; instaladores de hooks Observe por proyecto | Hooks probados localmente; Codex/Claude requieren confianza/aprobación y prueba de sesión; no ahorro automático |
+| Harnesses | MCP con quince herramientas, instaladores nativos y runner pareado | Sin proveedor autenticado probado; Codex sin reemplazo normal; V2 pendiente |
 | Investigación | Conteos `tiktoken` multilingües, mixtos y de recuperación selectiva, baseline natural conciso, agregación externa y CI | Falta corpus representativo y evaluación funcional con modelos reales |
 
 [Estado detallado](PROGRESS.md) · [Arquitectura](ARCHITECTURE.md) · [Roadmap](docs/ROADMAP.md)
@@ -42,14 +42,28 @@ Para usar el comando corto `veliq` se puede instalar el enlace local con `npm li
 
 ## Conectar a OpenCode, Codex o Claude Code
 
-VELIQ ya expone once herramientas MCP reales por stdio (`encode`, `decode`, `validate`, `optimize`, memoria, benchmark y capacidades). Verifiqué la conexión con OpenCode 1.18.33 y el cliente oficial MCP. Desde tu proyecto OpenCode:
+VELIQ ya expone quince herramientas MCP reales por stdio (`encode`, `decode`, `validate`, `optimize`, memoria, benchmark y capacidades). Verifiqué la conexión con OpenCode 1.18.33 y el cliente oficial MCP. Desde tu proyecto OpenCode:
 
 ```bash
 node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts install opencode
 opencode mcp list
 ```
 
-Para deshacer la configuración, `node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts uninstall opencode`. La instalación conserva las demás entradas y crea respaldo en `.veliq/backups/`. Para Codex y Claude Code, seguí los comandos específicos en [guías por harness](docs/HARNESSES.md); Claude puede exigir aprobación interactiva. También podés iniciar el servidor con `npm run mcp` para un cliente MCP propio. Son herramientas que el agente debe invocar; no interceptan por sí solas todos sus mensajes.
+Para deshacer la configuración, `node /RUTA/ABSOLUTA/veliq/apps/cli/main.ts uninstall opencode`. La instalación conserva las demás entradas y crea respaldo en `.veliq/backups/`. Para Codex y Claude Code, seguí los comandos específicos en [guías por harness](docs/HARNESSES.md); Claude puede exigir aprobación interactiva. También podés iniciar el servidor con `npm run mcp` para un cliente MCP propio. MCP por sí solo ofrece herramientas; el nuevo plugin nativo de contexto se configura según la guía automática.
+
+## Uso automático y pruebas reales
+
+`install opencode` ahora instala MCP **y el plugin nativo** en el proyecto diario; `install opencode-mcp` instala sólo las herramientas. Observe es el modo inicial. `install claude` instala hooks compatibles; `install codex` instala Observe (su API no permite reemplazo normal).
+
+La [guía NATIVE.md en español/inglés](docs/NATIVE.md) explica configuración, `bench paired`, aprobación de evidencia, Hybrid y envío de agregados desde CI. El plugin OpenCode 1.18.33 pasó un smoke con binario real y endpoint local determinista: 6.812 → 3.471 tokens de resultados, 3.341 evitados, ancla y archivo intactos. No es ahorro de sesión LLM. TypeScript y 52 pruebas pasan.
+
+```bash
+node scripts/create-paired-fixtures.mjs /tmp/veliq-paired.json TU_PROVEEDOR/TU_MODELO
+node apps/cli/main.ts bench paired /tmp/veliq-paired.json --allow-external --output /tmp/report.json
+npm run demo:context
+```
+
+El runner necesita tu harness/proveedor ya configurado y puede consumir cuota. No se ejecutaron modelos autenticados aquí. Un resultado negativo bloquea el gate; aprobar evidencia no activa Hybrid hasta configurar el modo explícitamente.
 
 ## Uso cotidiano
 
@@ -134,7 +148,7 @@ Para otro equipo se necesita un endpoint HTTPS expuesto de forma deliberada medi
 - Studio y el endpoint sólo deben usarse en una máquina confiable; no tienen autenticación de lectura multiusuario.
 - Los hashes de protocolo verifican integridad, no identidad del emisor.
 - Las optimizaciones operativas permanecen apagadas salvo activación explícita y verificación del subconjunto.
-- `veliq install opencode` configura MCP en el proyecto con respaldo privado y `uninstall opencode` lo revierte. Codex y Claude Code usan el mismo servidor MCP stdio; no hay interceptor profundo ni adaptador A2A operativo.
+- `install opencode` configura MCP + plugin nativo V1; `install claude` configura hooks. Codex conserva Observe/MCP; no hay acceso a mensajes ocultos ni A2A operativo.
 
 [Seguridad](docs/SECURITY.md) · [Especificación del idioma](docs/language/LANGUAGE_SPEC.md) · [Protocolo](docs/PROTOCOL_SPEC.md) · [Herramientas MCP](docs/MCP_SPEC.md) · [Medición](docs/TOKEN_OPTIMIZATION.md)
 
@@ -160,9 +174,9 @@ VELIQ researches a compositional artificial language and an optional protocol fo
 - Local SQLite memory, content hashes, version conflicts, and two in-process peers with reference recovery.
 - Observe runtime, guarded Hybrid proposal, CLI, interactive TUI, and local Studio backed by SQLite.
 - External benchmark schema, per-case aggregator, authenticated opt-in HTTP ingestion, SDK client, and automated tests.
-- Project-local automatic Observe hook installers for OpenCode/Codex/Claude Code. They preserve operational outputs, add no model context, record private metadata only, and report zero savings. Codex hooks require review and trust.
+- Automatic OpenCode V1 context plugin, Claude schema-preserving PostToolUse adapter and Codex Observe. Hybrid needs approved paired evidence, explicit configuration and favorable local counts. Typed incremental context and FULL/DELTA/ACK are available through CLI/SDK/MCP.
 
-**Not implemented:** free-form natural-language translation, runtime provider token usage, actual model cost measurement, remote authenticated agent transport, transparent deep interception, or A2A. Offline research uses official `tiktoken` Python encodings for exact *text* counts. Local MCP tools work and OpenCode connectivity was verified. See [progress](PROGRESS.md) and [roadmap](docs/ROADMAP.md).
+**Still unverified/pending:** authenticated model trials, daily net savings, free-form translation, C3 model comprehension, provider billing, hidden/internal usage, remote authenticated transport, Codex native replacement, OpenCode V2 and A2A. [Native setup, real trials and benchmark submission](docs/NATIVE.md) · [Progress](PROGRESS.md).
 
 ## Install and run
 
@@ -213,16 +227,20 @@ cmp harness-result.json research/benchmarks/harness-results-2026-09-29.json
 
 The committed [measurement and full methodology](docs/BENCHMARKS.md) compare original, formal VELIQ, C1, and VSR with `cl100k_base` and `o200k_base`, including glossary amortization scenarios. These are exact plain-text encoding counts only. Results contradict any claim of universal savings over all languages; English and Chinese are observed regressions. Model understanding, full request overhead, accuracy, cost, and different model families remain unmeasured.
 
+## Automatic daily integration
+
+The OpenCode installer now adds MCP plus a native V1 context plugin, initially Observe. Claude has a schema-preserving native hook installer; Codex remains Observe/MCP. [Native guide](docs/NATIVE.md) includes real paired-run manifests, approval/Hybrid configuration, incremental-context APIs and explicit aggregate submission from CI. OpenCode 1.18.33 delivered a retained exact anchor and a duplicate reference to a deterministic local endpoint, avoiding 3,341 encoded tool-context text tokens. This verifies hook plumbing, not full LLM-session savings. TypeScript and 52 tests pass.
+
 ## Connect to AI harnesses
 
-VELIQ now serves eleven real tools through the official MCP SDK over stdio. OpenCode 1.18.33 reported the project installation as connected. From your OpenCode project:
+VELIQ now serves fifteen real tools through the official MCP SDK over stdio. OpenCode 1.18.33 reported the project installation as connected. From your OpenCode project:
 
 ```bash
 node /ABSOLUTE/PATH/veliq/apps/cli/main.ts install opencode
 opencode mcp list
 ```
 
-Run `uninstall opencode` to remove the VELIQ entry while preserving the rest of the configuration and a private backup. See [harness recipes](docs/HARNESSES.md) for Codex and Claude Code commands, approval and verification steps. `npm run mcp` starts the server for other MCP clients. These are callable tools, not an automatic interceptor of every model request.
+Run `uninstall opencode` to remove the VELIQ entry while preserving the rest of the configuration and a private backup. See [harness recipes](docs/HARNESSES.md) for Codex and Claude Code commands, approval and verification steps. `npm run mcp` starts the server for other MCP clients. MCP tools remain explicit; the separate installed native plugin can transform supported exposed context after validation.
 
 ## Run a comparable external evaluation
 

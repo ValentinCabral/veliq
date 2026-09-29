@@ -1,6 +1,6 @@
 {
   "name": "veliq",
-  "version": "0.1.0-alpha.6",
+  "version": "0.1.0-alpha.7",
   "private": true,
   "type": "module",
   "engines": {
@@ -13,6 +13,7 @@
     "benchmark:selective": "python3 research/benchmarks/selective.py",
     "benchmark:harness": "python3 research/benchmarks/harness.py",
     "demo": "node --experimental-strip-types examples/demo.ts",
+    "demo:context": "node --experimental-strip-types examples/context-demo.ts",
     "dashboard": "node --experimental-strip-types apps/cli/main.ts dashboard",
     "tui": "node --experimental-strip-types apps/cli/main.ts tui",
     "mcp": "node --experimental-strip-types apps/cli/main.ts mcp",

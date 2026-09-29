@@ -14,6 +14,10 @@ Servidor local stdio basado en `@modelcontextprotocol/sdk` 1.31.0, Zod y Node 24
 | `veliq.memory.exact.store` | `id`, `scope`, `document={version,constraints,records}`, `expectedVersion?` | almacén versionado de documento con registros únicos |
 | `veliq.memory.exact.select` | `id`, `scope`, `recordId` | registro exacto, restricciones, hashes y versión para auditoría |
 | `veliq.pick` | `id`, `scope`, `recordId` | sólo registro exacto y restricciones para contexto del modelo; falla si falta |
+| `veliq.context.store` | `input={id,scope,records}`, `expectedVersion` | snapshot tipado, revisión/hash y autoridad preservada |
+| `veliq.context.select` | `id`, `scope`, `query`, `maxBytes?` | contexto relevante con todas las instrucciones/constraints |
+| `veliq.context.sync` | `id`, `scope`, `receiverDigest?` | FULL o DELTA con base explícita |
+| `veliq.context.apply` | `packet`, `authorizedScope` | validación integral, ACK y detección de duplicados |
 | `veliq.benchmark` | `action=synthetic|multilingual|selective|harness|list|ingest`, `run?` | benchmarks offline de texto o corridas externas autodeclaradas |
 
 `scope` exige las cinco claves `user`, `workspace`, `project`, `session` y `agent`. Los esquemas de entrada se validan mediante Zod. Los errores de ejecución se devuelven con `isError: true`; no se ejecutan comandos enviados por el modelo. La memoria queda en texto plano local: no guardar secretos. `benchmark.ingest` requiere una corrida explícita y la etiqueta como autodeclarada. Los contadores son bytes UTF-8 locales, no tokens de un proveedor.

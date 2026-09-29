@@ -9,7 +9,7 @@ const parse=(r:any)=>JSON.parse(r.content[0].text);
 const scope={user:'u',workspace:'w',project:'p',session:'s',agent:'a'};
 test('MCP SDK: handshake, herramientas, VSR, Observe y memoria aislada',async()=>{
  const db=new MemoryStore(':memory:'),server=createVeliqMcp(db),client=new Client({name:'veliq-test',version:'1.0'}),[a,b]=InMemoryTransport.createLinkedPair();
- try{await Promise.all([server.connect(a),client.connect(b)]);const listed=await client.listTools();assert.deepEqual(listed.tools.map(x=>x.name).sort(),['veliq.benchmark','veliq.capabilities','veliq.decode','veliq.encode','veliq.memory.exact.select','veliq.memory.exact.store','veliq.memory.retrieve','veliq.memory.store','veliq.optimize','veliq.pick','veliq.validate']);
+ try{await Promise.all([server.connect(a),client.connect(b)]);const listed=await client.listTools();assert.deepEqual(listed.tools.map(x=>x.name).sort(),['veliq.benchmark','veliq.capabilities','veliq.context.apply','veliq.context.select','veliq.context.store','veliq.context.sync','veliq.decode','veliq.encode','veliq.memory.exact.select','veliq.memory.exact.store','veliq.memory.retrieve','veliq.memory.store','veliq.optimize','veliq.pick','veliq.validate']);
  const text='Analiza el error "1" y no elimines los archivos originales.';
  const encoded=parse(await client.callTool({name:'veliq.encode',arguments:{text}}));assert.match(encoded.text,/pro\(del/);
  const c1=parse(await client.callTool({name:'veliq.encode',arguments:{text:'Analyze error "1" and do not delete the original files.',language:'en',surface:'compact'}}));assert.equal(c1.text,'sen@error:1;pro{del@archivos:originales}');
@@ -27,6 +27,11 @@ test('MCP SDK: handshake, herramientas, VSR, Observe y memoria aislada',async()=
  const selected=parse(await client.callTool({name:'veliq.memory.exact.select',arguments:{id:'d',scope,recordId:'r'}}));assert.equal(selected.record.body,'Dato exacto');assert.deepEqual(selected.constraints,['No borrar originales']);
  const picked=parse(await client.callTool({name:'veliq.pick',arguments:{id:'d',scope,recordId:'r'}}));assert.deepEqual(picked,{constraints:['No borrar originales'],record:{id:'r',body:'Dato exacto'}});
  const absent=await client.callTool({name:'veliq.memory.exact.select',arguments:{id:'d',scope:{...scope,project:'otro'},recordId:'r'}});assert.equal(absent.isError,true);
+ const record={id:'constraint',kind:'instruction',authority:'user',body:'No borrar /original.',constraints:['No borrar /original.'],tags:['safety'],pinned:true,provenance:'test',acquiredAt:'2026-09-29T00:00:00Z'};
+ const context=parse(await client.callTool({name:'veliq.context.store',arguments:{input:{id:'context',scope,records:[record]},expectedVersion:0}}));
+ const relevant=parse(await client.callTool({name:'veliq.context.select',arguments:{id:'context',scope,query:'unrelated'}}));assert.equal(relevant.records[0].body,record.body);
+ const packet=parse(await client.callTool({name:'veliq.context.sync',arguments:{id:'context',scope}}));assert.equal(packet.digest,context.digest);
+ const duplicate=parse(await client.callTool({name:'veliq.context.apply',arguments:{packet,authorizedScope:scope}}));assert.equal(duplicate.duplicate,true);
  }finally{await client.close();await server.close();db.close()}
 });
 test('MCP stdio: cliente oficial inicia servidor real y llama herramienta',async()=>{
