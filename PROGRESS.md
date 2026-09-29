@@ -29,5 +29,5 @@ Problema detectado: `pro(nu(dar(...)))` invertía la prohibición. Corregido a `
 
 - MCP oficial 1.31.0 con validación Zod, ocho herramientas, prueba in-process y stdio real.
 - OpenCode 1.18.33 confirma conexión desde configuración instalada por VELIQ; instalador reversible con respaldo privado.
-- Claude Code 2.1.284 registra el servidor, pendiente de aprobación en ese harness. Codex 0.159.0 localizado, sin modificar configuración local.
+- Claude Code 2.1.284 registra el servidor, pendiente de aprobación en ese harness. Codex 0.159.0 reconoce la entrada MCP como enabled mediante overrides temporales, sin sesión de modelo ni modificación global.
 - `npm ci` ahora requerido; `npm run typecheck` usa TypeScript estricto. 21 pruebas locales.

@@ -58,7 +58,7 @@ codex mcp add veliq -- node --experimental-strip-types /RUTA/ABSOLUTA/veliq/apps
 codex mcp list
 ```
 
-Luego, en Codex, pedí que invoque `veliq.capabilities` o `veliq.encode`. La [documentación oficial](https://developers.openai.com/codex/mcp) describe también configuración por `config.toml` e IDE. Este comando **no se ejecutó contra una instalación Codex configurada** en este entorno; el servidor sí pasó un handshake y llamadas de herramientas por stdio con el cliente oficial MCP. No concede acceso a razonamiento privado ni intercepta prompts ocultos. Para borrar la conexión: `codex mcp remove veliq` según la ayuda de tu versión (`codex mcp --help`).
+Luego, en Codex, pedí que invoque `veliq.capabilities` o `veliq.encode`. La [documentación oficial](https://developers.openai.com/codex/mcp) describe también configuración por `config.toml` e IDE. Codex CLI **0.159.0** reconoció la entrada VELIQ como `enabled` usando overrides temporales `-c`, sin modificar su configuración global. El servidor también pasó handshake y llamadas por stdio con el cliente oficial MCP; no se ejecutó una sesión de modelo Codex. No concede acceso a razonamiento privado ni intercepta prompts ocultos. Para borrar la conexión: `codex mcp remove veliq` según la ayuda de tu versión (`codex mcp --help`).
 
 **English:** register the stdio server with `codex mcp add` and check `codex mcp list`. Tool interoperability was tested with the official MCP client, while Codex's own configured session was not tested here.
 

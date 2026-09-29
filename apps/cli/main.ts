@@ -1,3 +1,4 @@
+import {spawnSync} from 'node:child_process';
 import {ingestRun,listRuns} from '../../packages/metrics/benchmarks.ts';
 import {resolve} from 'node:path';
 import {existsSync,mkdirSync,writeFileSync,readFileSync} from 'node:fs';
@@ -14,7 +15,7 @@ function output(x:unknown){console.log(typeof x==='string'?x:JSON.stringify(x,nu
 async function main(){
   switch(cmd){
     case 'init':mkdirSync(home,{recursive:true});if(!existsSync(resolve(home,'config.json')))writeFileSync(resolve(home,'config.json'),JSON.stringify({mode:'observe',privacy:'local'},null,2));store().close();output(`Inicializado: ${home}`);break;
-    case 'doctor':output({node:process.versions.node,nodeCompatible:Number(process.versions.node.split('.')[0])>=24,database:existsSync(dbPath),opencode:'No detectado automáticamente; consultar documentación de instalación',externalRequests:false});break;
+    case 'doctor':{const detect=(name:string)=>{const r=spawnSync(name,['--version'],{encoding:'utf8',timeout:2000});return r.status===0?(r.stdout||r.stderr).trim():null};output({node:process.versions.node,nodeCompatible:Number(process.versions.node.split('.')[0])>=24,database:existsSync(dbPath),opencode:detect('opencode'),codex:detect('codex'),claude:detect('claude'),opencodeProjectConfig:existsSync(resolve('opencode.json')),mcpCommand:'node --experimental-strip-types apps/cli/main.ts mcp',externalRequests:false});break}
     case 'encode':{const input=args.join(' ');if(!input)throw new Error('Falta texto');const v=input.startsWith('--veliq ')?fromText(input.slice(8)):fromSpanish(input);output({text:print(v.root),vsr:JSON.parse(canonical(v))});break}
     case 'decode':{const input=args.join(' ');const v=input.startsWith('{')?decode(input):fromText(input);output({spanish:toSpanish(v),diagnostic:diagnostic(v)});break}
     case 'status':{const s=store();output({mode:'observe',metrics:s.metrics().slice(0,10),memory:s.retrieve(defaultScope)});s.close();break}
