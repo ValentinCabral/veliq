@@ -1,0 +1,26 @@
+name: Verificación VELIQ
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Pruebas
+        run: npm test
+      - name: Benchmark sintético (bytes, no tokens LLM)
+        run: node --experimental-strip-types apps/cli/main.ts benchmark > benchmark-synthetic.json
+      - name: Adjuntar resultado reproducible
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-synthetic
+          path: benchmark-synthetic.json
+          retention-days: 14
