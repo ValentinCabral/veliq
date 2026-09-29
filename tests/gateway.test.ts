@@ -1,0 +1,5 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {MemoryStore} from '../packages/memory/store.ts';
+import {startServer} from '../apps/gateway/server.ts';
+test('dashboard refleja medición real y rechaza plantilla desconocida',async()=>{const store=new MemoryStore(':memory:');const server=startServer(store,0);await new Promise<void>(resolve=>server.on('listening',resolve));try{const port=(server.address() as {port:number}).port;const url=`http://127.0.0.1:${port}`;const r=await fetch(url+'/api/explore',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:'Analiza el error "1" y no elimines los archivos originales.'})});assert.equal(r.status,200);const data=await r.json();assert.match(data.text,/pro\(del/);const status=await (await fetch(url+'/api/status')).json();assert.equal(status.metrics.length,1);const bad=await fetch(url+'/api/explore',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({text:'haz cualquier cosa'})});assert.equal(bad.status,400)}finally{server.close();store.close()}});

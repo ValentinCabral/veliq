@@ -1,0 +1,5 @@
+# Seguridad 0.1
+
+Sin claves, red saliente ni cambios automáticos a harnesses. Servicio HTTP vinculado a loopback; no exponer mediante proxy público. `observe` no altera mensajes; las plantillas desconocidas fallan cerrado. Literales escapados y referencia SHA-256 validada. SQLite aísla recuerdos por usuario/workspace/proyecto/sesión/agente. El esquema guarda cuerpos en texto plano local: no introducir secretos. La API web local carece aún de autenticación y protección CSRF para ambientes multiusuario; ejecutar sólo en equipo confiable. El envelope detecta manipulación accidental, pero no identidad ni autenticidad. Las prioridades/autoridades no se elevan mediante transformación; falta política completa de taint y pruebas adversariales amplias.
+
+La ingesta de benchmarks está desactivada sin `VELIQ_INGEST_TOKEN` de al menos 16 bytes; compara el bearer con tiempo constante y limita cuerpos a 64 KB. No exponer el gateway sin un proxy HTTPS y autenticación adicional. La carga externa no recibe acceso a memoria ni ejecuta comandos. `run_id` duplicados se rechazan. El contenido de `notes` no se muestra sin escape HTML.

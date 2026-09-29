@@ -1,0 +1,3 @@
+# Protocolo 0.1 experimental
+
+Envelope con `protocol_version`, `message_id`, `session_id`, `source`, `destination`, `timestamp`, `message_type`, `encoding`, `dictionary_version`, `payload`, `references`, `constraints`, `correlation_id?`, `integrity`. Tipos declarados en `packages/protocol/protocol.ts`. Los peers negocian versión, diccionario, codificación y recuperación de referencias. El receptor valida integridad/destino, deduplica UUID y recupera por hash desde el peer emisor explícito. La recuperación opera localmente en el mismo proceso; no define transporte HTTP/MCP/A2A. La autenticación y la entrega durable están pendientes. Hash SHA-256 ≠ firma o autenticación. No enviar envelopes de origen no confiable a acciones privilegiadas.

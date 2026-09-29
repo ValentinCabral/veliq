@@ -1,0 +1,16 @@
+import {MemoryStore,defaultScope} from '../packages/memory/store.ts';
+import {processMessage} from '../packages/runtime/runtime.ts';
+import {canonical,toSpanish} from '../packages/semantic/vsr.ts';
+import {print} from '../packages/language/parser.ts';
+import {Peer,message} from '../packages/protocol/protocol.ts';
+const db=new MemoryStore(process.env.VELIQ_HOME?`${process.env.VELIQ_HOME}/veliq.sqlite`:'.veliq/veliq.sqlite');
+const input='Analiza el error "1" y no elimines los archivos originales.';
+const {vsr,decision}=processMessage(input,db,'observe');if(!vsr)throw new Error('VSR faltante');
+const a=new MemoryStore(':memory:'),b=new MemoryStore(':memory:');
+const caps={versions:['0.1'],dictionaries:['0.1'],encodings:['veliq-text','reference','natural'] as ('veliq-text'|'reference'|'natural')[],referenceRecovery:true,maxPayload:100_000};
+const p=new Peer('agent:1',a,caps),q=new Peer('agent:2',b,caps);
+const ref=a.putContent(canonical(vsr));
+const e=message({session_id:'demo',source:p.id,destination:q.id,message_type:'TASK',encoding:'reference',payload:print(vsr.root),references:[ref],constraints:["pro(del(ri(\"archivos:originales\")))"]});
+const recovered=q.receive(e,p);const remembered=db.put('demo:1',defaultScope,'episodic',recovered,'demo');
+console.log(JSON.stringify({input,vsr,text:print(vsr.root),decision,negotiation:'reference recovery',reference:ref,receiverHasContent:q.store.getContent(ref)===recovered,response:toSpanish(vsr),remembered,dashboard:'veliq dashboard'},null,2));
+a.close();b.close();db.close();

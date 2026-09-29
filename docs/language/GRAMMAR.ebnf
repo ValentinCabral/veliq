@@ -1,0 +1,8 @@
+document = ws, term, ws ;
+term = literal | concept ;
+concept = root, ws, "(", ws, [ term, { ws, ",", ws, term } ], ws, ")" ;
+root = lower, { lower } ; (* Debe existir en el diccionario 0.1 *)
+literal = JSON_string ; (* JSON double quoted string; se escapa con JSON *)
+ws = { " " | "\t" | "\r" | "\n" } ;
+lower = "a" | "b" | ... | "z" ;
+(* No hay precedencia implícita: anidamiento explícito. Prohibición pro(acción). *)

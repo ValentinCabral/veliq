@@ -1,0 +1,3 @@
+# VSR 0.1
+
+AST recursivo `Literal | Concept(id,args)` con versión, diccionario, procedencia y original opcional. La forma textual canónica elimina espacios; la serialización JSON fija el orden de campos. `semanticId` es SHA-256 del árbol expresado canónicamente, no una prueba de equivalencia en lenguaje natural. Round-trip garantizado sólo para términos válidos del diccionario 0.1. Las referencias se verifican contra un conjunto conocido cuando el contexto lo exige. Datos opacos retienen bytes Unicode del literal. Las reglas de aridad y tipo verificables están en `semantic/vsr.ts`. Expresiones sin semántica implementada permanecen investigativas.

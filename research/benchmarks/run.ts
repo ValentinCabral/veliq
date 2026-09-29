@@ -1,0 +1,4 @@
+import {ByteTokenizer,optimize,netPercent} from '../../packages/codec/optimizer.ts';
+import {fromSpanish} from '../../packages/semantic/vsr.ts';
+const corpus=Array.from({length:1000},(_,i)=>({id:i+1,source:'synthetic',category:['error','memory','negation','reference'][i%4],text:`Analiza el error "caso-${i+1}" y no elimines los archivos originales.`}));
+export function runBenchmark(){const counter=new ByteTokenizer();const rows=corpus.map(({text})=>optimize(text,fromSpanish(text),counter,'hybrid','VELIQ dictionary 0.1'));return {cases:rows.length,source:'sintético por plantilla (no evidencia de generalización)',counter:'UTF-8 byte baseline, no tokenizer comercial',selected:rows.filter(x=>x.strategy==='veliq-text').length,meanNetPercent:rows.reduce((a,x)=>a+netPercent(x),0)/rows.length,negativeCases:rows.filter(x=>netPercent(x)<0).length,baseline:'original',limitations:'No mide exactitud de LLM, costo de inferencia, latencia ni calidad de tarea'};}

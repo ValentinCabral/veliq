@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.veliq/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.env
+.env.*
+!.env.example
+coverage/

@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.1",
+  "run_id": "example-opencode-001",
+  "harness": "opencode",
+  "harness_version": "unknown",
+  "model": "example-model",
+  "model_version": "unknown",
+  "dataset": "example-synthetic",
+  "dataset_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "started_at": "2026-09-29T15:00:00-03:00",
+  "count_kind": "estimated",
+  "baseline": {"input": 100, "output": 30, "overhead": 0, "retries": 0},
+  "candidate": {"input": 90, "output": 30, "overhead": 20, "retries": 0},
+  "cases": 1,
+  "critical_violations": 0,
+  "notes": "Ejemplo de esquema. No representa una medición real."
+}
